@@ -4,12 +4,17 @@ import { Layout, Typography } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import SideMenu from '../components/SideMenu';
 import { usePathname } from 'next/navigation';
+import { ReactNode } from 'react';
 import './globals.css';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
 
-export default function RootLayout({ children }) {
+interface RootLayoutProps {
+  children: ReactNode;
+}
+
+export default function RootLayout({ children }: RootLayoutProps) {
   const pathname = usePathname();
   const isLoginPage = pathname === '/login';
 
