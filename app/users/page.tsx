@@ -1,14 +1,17 @@
 'use client';
 
-import { Table, Card, Button, Space, message } from 'antd';
+import { Table, Card, Button, Space, message, Modal, Form, Input, Select } from 'antd';
 import { useState, useEffect } from 'react';
 import { PlusOutlined } from '@ant-design/icons';
 import { ColumnsType } from 'antd/es/table';
 import { User } from '../../types/auth';
+import { request } from '../../utils/http';
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [form] = Form.useForm();
 
   // 表格列定义
   const columns: ColumnsType<User> = [
@@ -24,8 +27,8 @@ export default function UsersPage() {
     },
     {
       title: '头像',
-      dataIndex: 'avatar',
-      key: 'avatar',
+      dataIndex: 'avatar_url',
+      key: 'avatar_url',
     },
     {
       title: '邮箱',
@@ -49,30 +52,14 @@ export default function UsersPage() {
     },
   ];
 
-  // 模拟获取用户数据
+  // 获取用户数据
   const fetchUsers = async () => {
-    setLoading(true);
     try {
-      // TODO: 替换为实际的API调用
-      const mockData: User[] = [
-        {
-          id: 1,
-          username: '测试用户1',
-          email: 'test1@example.com',
-          createdAt: '2024-02-14',
-          avatar: 'http://user1.png',
-        },
-        {
-          id: 2,
-          username: '测试用户2',
-          email: 'test2@example.com',
-          createdAt: '2024-02-14',
-          avatar: 'http://user2.png',
-        },
-      ];
-      setUsers(mockData);
-    } catch (error) {
-      message.error('获取用户列表失败');
+      setLoading(true);
+      const response = await request.get<User[]>('/console/api/chat-users');
+      setUsers(response.data);
+    } catch (error: any) {
+      message.error(error.response?.data?.message || '获取用户列表失败');
     } finally {
       setLoading(false);
     }
@@ -82,9 +69,45 @@ export default function UsersPage() {
     fetchUsers();
   }, []);
 
-  const handleAdd = () => {
-    // TODO: 实现添加用户功能
-    message.info('添加用户功能开发中');
+  const handleAddUser = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleModalCancel = () => {
+    setIsModalOpen(false);
+    form.resetFields();
+  };
+
+  const handleModalOk = async () => {
+    try {
+      const values = await form.validateFields();
+      Modal.confirm({
+        title: '确认创建用户',
+        content: '确定要创建这个用户吗？',
+        onOk: async () => {
+          try {
+            setLoading(true);
+            // 调用创建用户API
+            await request.post('/console/api/chat-users', {
+              username: values.username,
+              email: values.email,
+              avatar_url: values.avatar_url
+            });
+            
+            message.success('用户创建成功');
+            setIsModalOpen(false);
+            form.resetFields();
+            fetchUsers(); // 刷新用户列表
+          } catch (error: any) {
+            message.error(error.response?.data?.message || '创建用户失败');
+          } finally {
+            setLoading(false);
+          }
+        }
+      });
+    } catch (error) {
+      message.error('表单验证失败');
+    }
   };
 
   const handleEdit = (record: User) => {
@@ -101,12 +124,12 @@ export default function UsersPage() {
     <Card
       title="用户管理"
       extra={
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleAddUser}>
           添加用户
         </Button>
       }
     >
-      <Table<User>
+      <Table
         columns={columns}
         dataSource={users}
         rowKey="id"
@@ -117,6 +140,46 @@ export default function UsersPage() {
           showTotal: (total) => `共 ${total} 条`,
         }}
       />
+
+      <Modal
+        title="添加用户"
+        open={isModalOpen}
+        onOk={handleModalOk}
+        onCancel={handleModalCancel}
+        confirmLoading={loading}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          name="userForm"
+        >
+          <Form.Item
+            name="username"
+            label="用户名"
+            rules={[{ required: true, message: '请输入用户名' }]}
+          >
+            <Input placeholder="请输入用户名" />
+          </Form.Item>
+
+          <Form.Item
+            name="email"
+            label="邮箱"
+            rules={[
+              { required: true, message: '请输入邮箱' },
+              { type: 'email', message: '请输入有效的邮箱地址' }
+            ]}
+          >
+            <Input placeholder="请输入邮箱" />
+          </Form.Item>
+
+          <Form.Item
+            name="avatar_url"
+            label="头像URL"
+          >
+            <Input placeholder="请输入头像URL" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </Card>
   );
 }
