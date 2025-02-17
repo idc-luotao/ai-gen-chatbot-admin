@@ -4,7 +4,7 @@ import { AuthResponse } from '../types/auth';
 
 // 创建 axios 实例
 const http: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api',
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5001',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -26,7 +26,7 @@ const refreshTokenFn = async (): Promise<string | null> => {
     }
 
     const response = await axios.post<AuthResponse>(
-      `${http.defaults.baseURL}/auth/refresh`,
+      `${http.defaults.baseURL}/console/api/refresh-token`,
       { refreshToken }
     );
 

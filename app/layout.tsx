@@ -1,9 +1,9 @@
 'use client';
 
-import { Layout, Typography } from 'antd';
-import { UserOutlined } from '@ant-design/icons';
+import { Layout, Typography, Dropdown, message } from 'antd';
+import { UserOutlined, SettingOutlined, LogoutOutlined } from '@ant-design/icons';
 import SideMenu from '../components/SideMenu';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { ReactNode } from 'react';
 import './globals.css';
 
@@ -16,7 +16,35 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const isLoginPage = pathname === '/login';
+
+  const handleMenuClick = ({ key }: { key: string }) => {
+    if (key === 'settings') {
+      // TODO: 导航到设置页面
+      message.info('设置功能开发中');
+    } else if (key === 'logout') {
+      // TODO: 调用登出API
+      message.success('已退出登录');
+      router.push('/login');
+    }
+  };
+
+  const menuItems = [
+    {
+      key: 'settings',
+      icon: <SettingOutlined />,
+      label: '设置',
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: '注销',
+    },
+  ];
 
   return (
     <html lang="en">
@@ -45,10 +73,29 @@ export default function RootLayout({ children }: RootLayoutProps) {
                   />
                   <Text strong style={{ fontSize: '18px' }}>管理系统</Text>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <UserOutlined style={{ marginRight: '8px' }} />
-                  <Text>管理员</Text>
-                </div>
+                <Dropdown
+                  menu={{
+                    items: menuItems,
+                    onClick: handleMenuClick,
+                  }}
+                  placement="bottomRight"
+                  arrow
+                >
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    padding: '0 8px',
+                    borderRadius: '4px',
+                    transition: 'all 0.3s',
+                    ':hover': {
+                      backgroundColor: 'rgba(0,0,0,0.025)'
+                    }
+                  }}>
+                    <UserOutlined style={{ marginRight: '8px' }} />
+                    <Text>管理员</Text>
+                  </div>
+                </Dropdown>
               </Header>
               <Layout>
                 <Sider width={200} theme="light">

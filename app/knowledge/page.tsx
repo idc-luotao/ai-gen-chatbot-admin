@@ -7,6 +7,7 @@ import UploadDialog from '../../components/UploadDialog';
 import { UploadFile } from 'antd/lib/upload/interface';
 import { ColumnsType } from 'antd/es/table';
 import { request } from '../../utils/http';
+import moment from 'moment';
 
 interface KnowledgeItem {
   id: number;
@@ -47,14 +48,20 @@ export default function KnowledgePage() {
       key: 'name',
     },
     {
-      title: '分类',
-      dataIndex: 'category',
-      key: 'category',
+      title: 'LLM',
+      dataIndex: 'embedding_model_provider',
+      key: 'embedding_model_provider',
+    },
+    {
+      title: 'LLM-Model',
+      dataIndex: 'embedding_model',
+      key: 'embedding_model',
     },
     {
       title: '创建时间',
       dataIndex: 'created_at',
       key: 'created_at',
+      render: (timestamp: number) => moment.unix(timestamp).format('YYYY-MM-DD HH:mm:ss'),
     },
   ];
 
@@ -62,7 +69,7 @@ export default function KnowledgePage() {
     setLoading(true);
     try {
       // TODO: 替换为实际的API地址
-      const response = await request.get<KnowledgeResponse>('http://localhost:5001/console/api/datasets?page=1&limit=30&include_all=false', {
+      const response = await request.get<KnowledgeResponse>('/console/api/datasets?page=1&limit=30&include_all=false', {
         params: {
           page: params.current,
           pageSize: params.pageSize
