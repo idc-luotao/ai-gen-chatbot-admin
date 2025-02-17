@@ -1,11 +1,12 @@
 'use client';
 
-import { Table, Button } from 'antd';
+import { Table, Button, message } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import UploadDialog from '../../components/UploadDialog';
 import { UploadFile } from 'antd/lib/upload/interface';
 import { ColumnsType } from 'antd/es/table';
+import { request } from '../../utils/http';
 
 interface KnowledgeItem {
   id: number;
@@ -14,12 +15,25 @@ interface KnowledgeItem {
   createTime: string;
 }
 
+interface PaginationParams {
+  current: number;
+  pageSize: number;
+}
+
+interface KnowledgeResponse {
+  items: KnowledgeItem[];
+  total: number;
+}
+
 export default function KnowledgePage() {
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [data, setData] = useState<KnowledgeItem[]>([
-    { id: 1, title: '示例知识点1', category: '分类1', createTime: '2024-02-14' },
-    { id: 2, title: '示例知识点2', category: '分类2', createTime: '2024-02-14' },
-  ]);
+  const [data, setData] = useState<KnowledgeItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [total, setTotal] = useState(0);
+  const [pagination, setPagination] = useState<PaginationParams>({
+    current: 1,
+    pageSize: 10
+  });
 
   const columns: ColumnsType<KnowledgeItem> = [
     {
@@ -29,8 +43,8 @@ export default function KnowledgePage() {
     },
     {
       title: '标题',
-      dataIndex: 'title',
-      key: 'title',
+      dataIndex: 'name',
+      key: 'name',
     },
     {
       title: '分类',
@@ -39,15 +53,46 @@ export default function KnowledgePage() {
     },
     {
       title: '创建时间',
-      dataIndex: 'createTime',
-      key: 'createTime',
+      dataIndex: 'created_at',
+      key: 'created_at',
     },
   ];
 
-  const handleUploadSuccess = (file: UploadFile) => {
-    // 这里可以处理文件上传成功后的逻辑
-    // 例如刷新数据列表
+  const fetchKnowledgeList = async (params: PaginationParams) => {
+    setLoading(true);
+    try {
+      // TODO: 替换为实际的API地址
+      const response = await request.get<KnowledgeResponse>('http://localhost:5001/console/api/datasets?page=1&limit=30&include_all=false', {
+        params: {
+          page: params.current,
+          pageSize: params.pageSize
+        }
+      });
+
+      setData(response.data);
+      setTotal(response.total);
+    } catch (error) {
+      message.error('获取知识点列表失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+   fetchKnowledgeList(pagination);
+  }, [pagination]);
+
+  const handleTableChange = (newPagination: any) => {
+    setPagination({
+      current: newPagination.current,
+      pageSize: newPagination.pageSize
+    });
+  };
+
+  const handleUploadSuccess = async (file: UploadFile) => {
     setUploadOpen(false);
+    // 刷新列表
+    fetchKnowledgeList(pagination);
   };
 
   return (
@@ -65,11 +110,14 @@ export default function KnowledgePage() {
         columns={columns}
         dataSource={data}
         rowKey="id"
+        loading={loading}
         pagination={{
-          defaultPageSize: 10,
+          ...pagination,
+          total,
           showSizeChanger: true,
           showTotal: (total) => `共 ${total} 条`,
         }}
+        onChange={handleTableChange}
       />
       <UploadDialog
         open={uploadOpen}

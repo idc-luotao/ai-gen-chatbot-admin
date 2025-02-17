@@ -21,6 +21,7 @@ const refreshTokenFn = async (): Promise<string | null> => {
   try {
     const refreshToken = getRefreshToken();
     if (!refreshToken) {
+      console.log("!refreshToken error")
       throw new Error('No refresh token');
     }
 
@@ -34,8 +35,9 @@ const refreshTokenFn = async (): Promise<string | null> => {
     setRefreshToken(newRefreshToken);
     return accessToken;
   } catch (error) {
-    removeTokens();
-    window.location.href = '/login';
+    console.log("error:"+error)
+    // removeTokens();
+    // window.location.href = '/login';
     return null;
   }
 };

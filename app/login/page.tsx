@@ -4,6 +4,9 @@ import { Card, Form, Input, Button, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
+import axios from 'axios';
+import { setToken, setRefreshToken} from 'utils/storage';
+
 
 interface LoginForm {
   email: string;
@@ -18,10 +21,26 @@ export default function LoginPage() {
     try {
       // TODO: 实现实际的登录API调用
       console.log('登录信息:', values);
-      
+
+      const param = {
+        email: values.email,
+        password: values.password,
+        language: "zh-Hans",
+        remember_me: true
+      }
+      const response = await axios.post('http://localhost:5001/console/api/login', param);
       // 模拟登录成功
-      message.success('登录成功');
-      router.push('/knowledge');
+      console.log(JSON.stringify(response));
+      if(response.data.result === 'success') {
+        message.success('登录成功');
+        console.log('console_token:'+response.data.data.access_token)
+        console.log('refresh_token:'+response.data.data.refresh_token)
+        setToken(response.data.data.access_token)
+        setRefreshToken(response.data.data.refresh_token)
+        router.replace('/knowledge')
+      }else{
+        message.error('登录失败，请检查邮箱和密码');
+      }
     } catch (error) {
       message.error('登录失败，请检查邮箱和密码');
     }

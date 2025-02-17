@@ -4,15 +4,24 @@ import { Table, Button } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import { useState } from 'react';
 import UploadDialog from '../../components/UploadDialog';
+import { UploadFile } from 'antd/lib/upload/interface';
+import { ColumnsType } from 'antd/es/table';
+
+interface KnowledgeItem {
+  id: number;
+  title: string;
+  category: string;
+  createTime: string;
+}
 
 export default function KnowledgePage() {
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [data, setData] = useState([
+  const [data, setData] = useState<KnowledgeItem[]>([
     { id: 1, title: '示例知识点1', category: '分类1', createTime: '2024-02-14' },
     { id: 2, title: '示例知识点2', category: '分类2', createTime: '2024-02-14' },
   ]);
 
-  const columns = [
+  const columns: ColumnsType<KnowledgeItem> = [
     {
       title: 'ID',
       dataIndex: 'id',
@@ -35,7 +44,7 @@ export default function KnowledgePage() {
     },
   ];
 
-  const handleUploadSuccess = (file) => {
+  const handleUploadSuccess = (file: UploadFile) => {
     // 这里可以处理文件上传成功后的逻辑
     // 例如刷新数据列表
     setUploadOpen(false);
@@ -52,7 +61,7 @@ export default function KnowledgePage() {
           上传文件
         </Button>
       </div>
-      <Table
+      <Table<KnowledgeItem>
         columns={columns}
         dataSource={data}
         rowKey="id"

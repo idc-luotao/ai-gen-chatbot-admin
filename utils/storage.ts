@@ -1,7 +1,7 @@
 import { TokenPayload } from '../types/auth';
 
-const TOKEN_KEY = 'admin_token';
-const REFRESH_TOKEN_KEY = 'admin_refresh_token';
+const TOKEN_KEY = 'access_token';
+const REFRESH_TOKEN_KEY = 'refresh_token';
 
 export const getToken = (): string | null => {
   if (typeof window === 'undefined') return null;
