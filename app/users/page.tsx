@@ -37,8 +37,13 @@ export default function UsersPage() {
     },
     {
       title: '创建时间',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
+      dataIndex: 'created_at',
+      key: 'created_at',
+    },
+    {
+      title: '更新时间',
+      dataIndex: 'updated_at',
+      key: 'updated_at',
     },
     {
       title: '操作',

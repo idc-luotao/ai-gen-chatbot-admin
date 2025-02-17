@@ -6,6 +6,8 @@ import SideMenu from '../components/SideMenu';
 import { usePathname, useRouter } from 'next/navigation';
 import { ReactNode } from 'react';
 import './globals.css';
+import { request } from '../utils/http';
+import { removeTokens } from '../utils/storage';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -19,14 +21,19 @@ export default function RootLayout({ children }: RootLayoutProps) {
   const router = useRouter();
   const isLoginPage = pathname === '/login';
 
-  const handleMenuClick = ({ key }: { key: string }) => {
+  const handleMenuClick = async ({ key }: { key: string }) => {
     if (key === 'settings') {
       // TODO: 导航到设置页面
       message.info('设置功能开发中');
     } else if (key === 'logout') {
-      // TODO: 调用登出API
-      message.success('已退出登录');
-      router.push('/login');
+      try {
+        await request.get('/console/api/logout');
+        removeTokens(); // 清除本地存储的token
+        message.success('已退出登录');
+        router.push('/login');
+      } catch (error: any) {
+        message.error(error.response?.data?.message || '退出登录失败');
+      }
     }
   };
 
