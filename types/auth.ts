@@ -12,6 +12,6 @@ export interface User {
   id: number;
   username: string;
   email: string;
-  userType: 'admin' | 'user';
+  avatar: string;
   createdAt: string;
 }

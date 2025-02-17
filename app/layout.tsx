@@ -31,14 +31,14 @@ export default function RootLayout({ children }: RootLayoutProps) {
   };
 
   const menuItems = [
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: '设置',
-    },
-    {
-      type: 'divider',
-    },
+    // {
+    //   key: 'settings',
+    //   icon: <SettingOutlined />,
+    //   label: '设置',
+    // },
+    // {
+    //   type: 'divider',
+    // },
     {
       key: 'logout',
       icon: <LogoutOutlined />,

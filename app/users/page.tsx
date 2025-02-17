@@ -23,9 +23,9 @@ export default function UsersPage() {
       key: 'username',
     },
     {
-      title: '用户类型',
-      dataIndex: 'userType',
-      key: 'userType',
+      title: '头像',
+      dataIndex: 'avatar',
+      key: 'avatar',
     },
     {
       title: '邮箱',
@@ -60,14 +60,14 @@ export default function UsersPage() {
           username: '测试用户1',
           email: 'test1@example.com',
           createdAt: '2024-02-14',
-          userType: 'admin',
+          avatar: 'http://user1.png',
         },
         {
           id: 2,
           username: '测试用户2',
           email: 'test2@example.com',
           createdAt: '2024-02-14',
-          userType: 'user',
+          avatar: 'http://user2.png',
         },
       ];
       setUsers(mockData);
