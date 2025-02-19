@@ -19,21 +19,21 @@ let requests: Array<(token: string) => void> = [];
 // 刷新token的函数
 const refreshTokenFn = async (): Promise<string | null> => {
   try {
-    const refreshToken = getRefreshToken();
-    if (!refreshToken) {
+    const refresh_token = getRefreshToken();
+    if (!refresh_token) {
       console.log("!refreshToken error")
       throw new Error('No refresh token');
     }
 
     const response = await axios.post<AuthResponse>(
       `${http.defaults.baseURL}/console/api/refresh-token`,
-      { refreshToken }
+      { refresh_token }
     );
 
-    const { accessToken, refreshToken: newRefreshToken } = response.data;
-    setToken(accessToken);
+    const { access_token, refresh_token: newRefreshToken } = response.data;
+    setToken(access_token);
     setRefreshToken(newRefreshToken);
-    return accessToken;
+    return access_token;
   } catch (error) {
     console.log("error:"+error)
     removeTokens();

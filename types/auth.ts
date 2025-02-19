@@ -4,8 +4,8 @@ export interface TokenPayload {
 }
 
 export interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
+  access_token: string;
+  refresh_token: string;
 }
 
 export interface User {
