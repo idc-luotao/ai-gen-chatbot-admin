@@ -149,6 +149,7 @@ interface RequestMethods {
   put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) => Promise<T>;
   delete: <T = any>(url: string, config?: AxiosRequestConfig) => Promise<T>;
   patch: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) => Promise<T>;
+  upload: <T = any>(url: string, file: File, data?: any) => Promise<T>;
 }
 
 // 导出请求方法
@@ -158,6 +159,23 @@ export const request: RequestMethods = {
   put: (url, data = {}, config = {}) => http.put(url, data, config),
   delete: (url, config = {}) => http.delete(url, config),
   patch: (url, data = {}, config = {}) => http.patch(url, data, config),
+  upload: (url, file, data = {}) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // 添加其他数据到 FormData
+    Object.keys(data).forEach(key => {
+      formData.append(key, data[key]);
+    });
+
+    const token = getToken();
+    return http.post(url, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      },
+    });
+  },
 };
 
 export default http;

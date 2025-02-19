@@ -4,6 +4,8 @@ import { Modal, Upload, message, Button, Form, Input } from 'antd';
 import { InboxOutlined } from '@ant-design/icons';
 import { UploadFile } from 'antd/lib/upload/interface';
 import { useState } from 'react';
+import { getToken } from '../utils/storage';
+import { request } from '../utils/http';
 
 const { Dragger } = Upload;
 
@@ -11,9 +13,10 @@ interface UploadDialogProps {
   open: boolean;
   onCancel: () => void;
   onSuccess: (file: UploadFile, title: string) => void;
+  action: string;
 }
 
-const UploadDialog = ({ open, onCancel, onSuccess }: UploadDialogProps) => {
+const UploadDialog = ({ open, onCancel, onSuccess, action }: UploadDialogProps) => {
   const [form] = Form.useForm();
   const [uploadedFile, setUploadedFile] = useState<UploadFile | null>(null);
   const [saveLoading, setSaveLoading] = useState(false);
@@ -21,16 +24,30 @@ const UploadDialog = ({ open, onCancel, onSuccess }: UploadDialogProps) => {
   const uploadProps = {
     name: 'file',
     multiple: false,
-    action: '/api/upload',
+    action: action,
+    withCredentials: false,
+    headers: {
+      Authorization: `Bearer ${getToken()}`,
+    },
     onChange(info: any) {
       const { status } = info.file;
       if (status === 'done') {
         message.success(`${info.file.name} 文件上传成功`);
         setUploadedFile(info.file);
       } else if (status === 'error') {
-        message.error(`${info.file.name} 文件上传失败`);
+        console.error('Upload error:', info.file.error, info.file.response);
+        message.error(`${info.file.name} 文件上传失败: ${info.file.response?.message || '未知错误'}`);
         setUploadedFile(null);
       }
+    },
+    onError(error: any) {
+      console.error('Upload error details:', error);
+    },
+    beforeUpload: (file: File) => {
+      console.log('Uploading file:', file.name);
+      console.log('Current token:', getToken());
+      request.upload(action, file, { title: file.name });
+      return false;
     },
   };
 
