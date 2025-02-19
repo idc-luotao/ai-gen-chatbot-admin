@@ -1,6 +1,6 @@
 'use client';
 
-import { Table, Button, message, Modal, Upload, Form, Input } from 'antd';
+import { Table, Button, message, Modal, Upload } from 'antd';
 import { UploadOutlined, InboxOutlined } from '@ant-design/icons';
 import { useState, useEffect } from 'react';
 import { UploadFile } from 'antd/lib/upload/interface';
@@ -38,19 +38,25 @@ export default function KnowledgePage() {
     current: 1,
     pageSize: 10
   });
-  const [form] = Form.useForm();
   const [uploadedFile, setUploadedFile] = useState<UploadFile | null>(null);
   const [saveLoading, setSaveLoading] = useState(false);
   const [fileId, setFileId] = useState('');
+
   const uploadProps = {
     name: 'file',
     multiple: false,
+    maxCount: 1,
     action: `${http.defaults.baseURL}/console/api/files/upload?source=datasets`,
     withCredentials: false,
     headers: {
       Authorization: `Bearer ${getToken()}`,
     },
     onChange(info: any) {
+      // 如果已经有文件在上传，阻止新的上传
+      if (info.fileList.length > 1) {
+        info.fileList = info.fileList.slice(-1);
+      }
+      
       const { status } = info.file;
       if (status === 'done') {
         message.success(`${info.file.name} 文件上传成功`);
@@ -65,7 +71,6 @@ export default function KnowledgePage() {
       console.error('Upload error details:', error);
     },
     beforeUpload: (file: File) => {
-
       console.log('Uploading file:', file.name);
       console.log('Current token:', getToken());
       request.upload(`/console/api/files/upload?source=datasets`
@@ -146,13 +151,11 @@ export default function KnowledgePage() {
 
     try {
       setSaveLoading(true);
-      const values = await form.validateFields();
       request.post('/console/api/datasets/init12'
         , {"data_source":{"type":"upload_file","info_list":{"data_source_type":"upload_file","file_info_list":{"file_ids":[""+fileId+""]}}},"indexing_technique":"high_quality","process_rule":{"rules":{"pre_processing_rules":[{"id":"remove_extra_spaces","enabled":true},{"id":"remove_urls_emails","enabled":false}],"segmentation":{"separator":"\n\n","max_tokens":500,"chunk_overlap":50}},"mode":"custom"},"doc_form":"text_model","doc_language":"Chinese","retrieval_model":{"search_method":"semantic_search","reranking_enable":false,"reranking_model":{"reranking_provider_name":"","reranking_model_name":""},"top_k":3,"score_threshold_enabled":false,"score_threshold":0.5},"embedding_model":"text-embedding-3-large","embedding_model_provider":"openai"})
         .then((res) => {
           message.success('上传成功');
           setUploadOpen(false);
-          form.resetFields();
           setUploadedFile(null);
           // 刷新列表
           fetchKnowledgeList(pagination);
@@ -165,18 +168,12 @@ export default function KnowledgePage() {
           setSaveLoading(false);
         });
     } catch (error) {
-      if (error.errorFields) {
-        message.error('请填写知识点名称');
-      } else {
-        console.error('Save failed:', error);
-      }
-    } finally {
-      setSaveLoading(false);
+      console.error('Save failed:', error);
+      message.error('上传失败');
     }
   };
 
   const handleCancel = () => {
-    form.resetFields();
     setUploadedFile(null);
     setUploadOpen(false);
   };
@@ -223,26 +220,15 @@ export default function KnowledgePage() {
           </Button>,
         ]}
       >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="title"
-            label="知识点名称"
-            rules={[{ required: true, message: '请输入知识点名称' }]}
-          >
-            <Input placeholder="请输入知识点名称" />
-          </Form.Item>
-          <Form.Item label="上传文件">
-            <Dragger {...uploadProps}>
-              <p className="ant-upload-drag-icon">
-                <InboxOutlined />
-              </p>
-              <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
-              <p className="ant-upload-hint">
-                支持单个或批量上传，严禁上传公司内部资料及其他违禁文件
-              </p>
-            </Dragger>
-          </Form.Item>
-        </Form>
+        <Dragger {...uploadProps}>
+          <p className="ant-upload-drag-icon">
+            <InboxOutlined />
+          </p>
+          <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
+          <p className="ant-upload-hint">
+            支持单个或批量上传，严禁上传公司内部资料及其他违禁文件
+          </p>
+        </Dragger>
       </Modal>
     </div>
   );
