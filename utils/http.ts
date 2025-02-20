@@ -30,7 +30,7 @@ const refreshTokenFn = async (): Promise<string | null> => {
       { refresh_token }
     );
 
-    const { access_token, refresh_token: newRefreshToken } = response.data;
+    const { access_token, refresh_token: newRefreshToken } = response.data.data;
     setToken(access_token);
     setRefreshToken(newRefreshToken);
     return access_token;
@@ -55,7 +55,7 @@ http.interceptors.request.use(
       return config;
     }
 
-    if (config.url?.includes('/auth/refresh') || config.url?.includes('/auth/login')) {
+    if (config.url?.includes('/console/api/refresh-token') || config.url?.includes('/console/api/login')) {
       return config;
     }
 
@@ -97,7 +97,7 @@ http.interceptors.response.use(
     const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
 
     // 如果是刷新token的请求失败，直接跳转登录页
-    if (originalRequest.url?.includes('/auth/refresh')) {
+    if (originalRequest.url?.includes('/console/api/refresh-token')) {
       removeTokens();
       window.location.href = '/login';
       return Promise.reject(error);
@@ -107,7 +107,7 @@ http.interceptors.response.use(
     if (
       error.response?.status === 401 && 
       !originalRequest._retry && 
-      !originalRequest.url?.includes('/auth/login')
+      !originalRequest.url?.includes('/console/api/login')
     ) {
       originalRequest._retry = true;
 

@@ -7,6 +7,13 @@ import { ColumnsType } from 'antd/es/table';
 import { User } from '../../types/auth';
 import { request } from '../../utils/http';
 
+interface UserFormData {
+  username: string;
+  email: string;
+  password: string;
+  avatar_url: string;
+}
+
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
@@ -130,7 +137,8 @@ export default function UsersPage() {
             await request.post('/console/api/chat-users', {
               username: values.username,
               email: values.email,
-              avatar_url: values.avatar_url
+              avatar_url: values.avatar_url,
+              password: values.password
             });
             
             message.success('用户创建成功');
@@ -175,11 +183,12 @@ export default function UsersPage() {
           try {
             setLoading(true);
             // 调用编辑用户API
-            await request.put(`/console/api/chat-users/${editingUser?.id}`, {
-              username: values.username,
-              email: values.email,
-              avatar_url: values.avatar_url
-            });
+            if (!values.password) {
+              const { password, ...dataWithoutPassword } = values;
+              await request.put(`/console/api/chat-users/${editingUser?.id}`, dataWithoutPassword);
+            } else {
+              await request.put(`/console/api/chat-users/${editingUser?.id}`, values);
+            }
             
             message.success('用户修改成功');
             setIsEditModalOpen(false);
@@ -267,6 +276,17 @@ export default function UsersPage() {
           </Form.Item>
 
           <Form.Item
+            name="password"
+            label="密码"
+            rules={[
+              { required: true, message: '请输入密码' },
+              { min: 6, message: '密码长度不能小于6位' }
+            ]}
+          >
+            <Input.Password placeholder="请输入密码" />
+          </Form.Item>
+
+          <Form.Item
             name="email"
             label="邮箱"
             rules={[
@@ -304,6 +324,16 @@ export default function UsersPage() {
             rules={[{ required: true, message: '请输入用户名' }]}
           >
             <Input placeholder="请输入用户名" />
+          </Form.Item>
+
+          <Form.Item
+            name="password"
+            label="密码"
+            rules={[
+              { min: 6, message: '密码长度不能小于6位' }
+            ]}
+          >
+            <Input.Password placeholder="请输入密码" />
           </Form.Item>
 
           <Form.Item
