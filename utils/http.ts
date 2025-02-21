@@ -55,7 +55,12 @@ http.interceptors.request.use(
       return config;
     }
 
-    if (config.url?.includes('/console/api/refresh-token') || config.url?.includes('/console/api/login')) {
+    if (
+      config.url?.includes('/console/api/refresh-token') 
+      || config.url?.includes('/console/api/login')
+      || config.url?.includes('/console/api/user/get_type')
+      || config.url?.includes('/console/api/chat-user/login')
+    ) {
       return config;
     }
 
