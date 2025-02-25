@@ -34,8 +34,9 @@ export default function ChatbotPage() {
   useEffect(() => {
     const fetchChatHistories = async () => {
       try {
+        const userName = getUserName();
         const token = "app-BFJYGd9Nlbyi5Hhj9RvmyusG";
-        const url = '/v1/conversations?last_id=&limit=20&user=u11@gmail.com';
+        const url = `/v1/conversations?last_id=&limit=20&user=${userName}`;
         const response = await request.get(url, token);
         if (response.data.data) {
           const histories = response.data.data.map((conv: any) => ({
