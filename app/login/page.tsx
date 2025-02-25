@@ -79,7 +79,7 @@ export default function LoginPage() {
         }
       }
       else {
-        message.error('您没有管理员权限');
+        message.error('用户不存在');
       }
     } catch (error) {
       console.error('Login error:', error);

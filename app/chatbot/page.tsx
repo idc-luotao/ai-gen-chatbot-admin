@@ -4,18 +4,12 @@ import { useState, useEffect } from 'react';
 import { Input, Button, List, Avatar, message, Layout } from 'antd';
 import { SendOutlined, RobotOutlined, UserOutlined, MessageOutlined } from '@ant-design/icons';
 import styles from './page.module.css';
-import { request } from '../../utils/http';
+import { request } from '../../utils/simpleHttp';
 import { useUser } from '../../contexts/UserContext';
+import { getUserName } from '../../utils/storage';
+import axios from 'axios';
 
 const { Sider, Content } = Layout;
-
-// 模拟数据
-const mockHistories = [
-  { id: '1', title: '关于React的讨论' },
-  { id: '2', title: 'TypeScript学习' },
-  { id: '3', title: '项目架构设计' },
-  { id: '4', title: '数据库优化' },
-];
 
 interface Message {
   content: string;
@@ -32,9 +26,32 @@ export default function ChatbotPage() {
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
-  const [chatHistories, setChatHistories] = useState<ChatHistory[]>(mockHistories);
+  const [chatHistories, setChatHistories] = useState<ChatHistory[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const { userName } = useUser();
+
+  // 获取聊天历史
+  useEffect(() => {
+    const fetchChatHistories = async () => {
+      try {
+        const token = "app-BFJYGd9Nlbyi5Hhj9RvmyusG";
+        const url = '/v1/conversations?last_id=&limit=20&user=u11@gmail.com';
+        const response = await request.get(url, token);
+        if (response.data.data) {
+          const histories = response.data.data.map((conv: any) => ({
+            id: conv.id,
+            title: conv.name || '未命名对话'
+          }));
+          setChatHistories(histories);
+        }
+      } catch (error) {
+        message.error('获取聊天历史失败');
+        console.error('Error fetching chat histories:', error);
+      }
+    };
+
+    fetchChatHistories();
+  }, []);
 
   // 选择历史对话
   const handleSelectChat = async (chatId: string) => {
@@ -78,6 +95,7 @@ export default function ChatbotPage() {
 
     try {
       // TODO: 实现实际的聊天API
+    
       setTimeout(() => {
         const botMessage: Message = {
           content: '这是一个模拟的回复',

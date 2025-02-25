@@ -45,6 +45,7 @@ const refreshTokenFn = async (): Promise<string | null> => {
 // 请求拦截器
 http.interceptors.request.use(
   async (config: AxiosRequestConfig): Promise<AxiosRequestConfig> => {
+    console.log("config.url:"+config.url)
     const token = getToken();
     
     if (token && !isTokenExpired(token)) {
@@ -54,7 +55,7 @@ http.interceptors.request.use(
       };
       return config;
     }
-
+    
     if (
       config.url?.includes('/console/api/refresh-token') 
       || config.url?.includes('/console/api/login')
