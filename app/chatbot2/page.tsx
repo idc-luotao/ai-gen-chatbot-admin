@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Layout, List, Input, Button, Avatar, Empty } from 'antd';
-import { SendOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { Layout, List, Input, Button, Avatar, Empty, Upload } from 'antd';
+import { SendOutlined, DeleteOutlined, PlusOutlined, PaperClipOutlined } from '@ant-design/icons';
 import styles from './page.module.css';
 
 const { Header, Content, Sider } = Layout;
@@ -98,7 +98,7 @@ export default function ChatbotPage() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = () => {
+  const handleSendMessage = () => {
     if (!inputValue.trim()) return;
 
     const newMessage: Message = {
@@ -236,23 +236,41 @@ export default function ChatbotPage() {
                 <div ref={messagesEndRef} />
               </div>
               <div className={styles.inputArea}>
+                <Upload
+                  className={styles.upload}
+                  showUploadList={false}
+                  beforeUpload={(file) => {
+                    // 将文件名添加到输入框
+                    setInputValue(prev => {
+                      const prefix = prev.trim() ? prev.trim() + ' ' : '';
+                      return prefix + `[文件: ${file.name}]`;
+                    });
+                    // 返回 false 阻止自动上传
+                    return false;
+                  }}
+                >
+                  <Button 
+                    type="text" 
+                    icon={<PaperClipOutlined />}
+                    className={styles.uploadButton}
+                  />
+                </Upload>
                 <Input.TextArea
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  onPressEnter={(e) => {
-                    if (!e.shiftKey) {
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
-                      handleSend();
+                      handleSendMessage();
                     }
                   }}
                   placeholder="输入消息，按Enter发送，Shift+Enter换行"
-                  autoSize={{ minRows: 1, maxRows: 6 }}
-                  className={styles.input}
+                  autoSize={{ minRows: 1, maxRows: 4 }}
                 />
                 <Button
                   type="primary"
                   icon={<SendOutlined />}
-                  onClick={handleSend}
+                  onClick={handleSendMessage}
                   className={styles.sendButton}
                 >
                   发送
