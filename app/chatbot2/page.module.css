@@ -3,55 +3,89 @@
   overflow: hidden;
 }
 
-.historySider {
+.sider {
+  background: #fff;
   border-right: 1px solid #f0f0f0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
-.historyHeader {
+.sessionHeader {
   padding: 16px;
   border-bottom: 1px solid #f0f0f0;
 }
 
-.historyList {
-  flex: 1;
-  overflow-y: auto;
-  padding-bottom: 16px;
+.newChatButton {
+  width: 100%;
 }
 
-.historyItem {
-  padding: 12px 16px;
+.sessionList {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.sessionItem {
+  padding: 16px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   transition: background-color 0.3s;
 }
 
-.historyItem:hover {
+.sessionItem:hover {
   background-color: #f5f5f5;
 }
 
-.selectedHistory {
-  background-color: #e6f7ff;
+.selectedSession {
+  background-color: #e6f4ff;
 }
 
-.historyItemDesc {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.sessionInfo {
+  flex: 1;
+  overflow: hidden;
+  margin-right: 12px;
 }
 
-.lastMessage {
-  color: #666;
-  font-size: 12px;
+.sessionTitle {
+  font-weight: 500;
+  margin-bottom: 4px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.timestamp {
-  color: #999;
+.sessionLastMessage {
+  color: #666;
   font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.sessionLastMessage span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sessionTime {
+  color: #999;
+  flex-shrink: 0;
+}
+
+.deleteButton {
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.sessionItem:hover .deleteButton {
+  opacity: 1;
 }
 
 .chatContainer {
@@ -62,12 +96,12 @@
   background: #f5f5f5;
 }
 
-.chatWindow {
-  flex: 1;
+.chatContent {
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  position: relative;
 }
 
 .messageList {
@@ -81,27 +115,20 @@
 .botMessage {
   margin: 16px 0;
   padding: 0;
-  display: flex !important;
+  display: flex;
   align-items: flex-start;
   gap: 8px;
-  background: transparent;
-  border: none !important;
+  width: 100%;
 }
 
 .userMessage {
-  flex-direction: row !important;
-  padding-left: 60px;
+  flex-direction: row;
+  justify-content: flex-end;
+  padding-right: 20px;
 }
 
 .botMessage {
-  padding-right: 60px;
-}
-
-.messageWrapper {
-  display: flex;
-  flex-direction: row-reverse;
-  align-items: flex-start;
-  gap: 8px;
+  padding-right: 20%;
 }
 
 .messageContent {
@@ -115,35 +142,64 @@
   max-width: 80%;
 }
 
+.messageText {
+  margin-bottom: 4px;
+}
+
 .userMessage .messageContent {
   background-color: #e5f2ff;
   color: #000;
-  order: 2;
+  order: 1;
 }
 
 .userMessage :global(.ant-avatar) {
-  order: 1;
+  order: 2;
+}
+
+.userMessage .messageText {
+  text-align: right;
+}
+
+.userMessage .messageTime {
+  text-align: right;
+  font-size: 12px;
+  color: #999;
 }
 
 .botMessage .messageContent {
   background-color: #fff;
   color: #000;
-  margin-left: 12px;
+}
+
+.botMessage .messageText {
+  text-align: left;
+}
+
+.botMessage .messageTime {
+  text-align: left;
+  font-size: 12px;
+  color: #999;
 }
 
 .inputArea {
   padding: 16px 20px;
+  background: #fff;
   border-top: 1px solid #f0f0f0;
   display: flex;
   gap: 12px;
-  background: #fff;
 }
 
 .input {
   flex: 1;
-  border-radius: 4px;
 }
 
 .sendButton {
   align-self: flex-end;
+}
+
+.emptyState {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
