@@ -9,6 +9,14 @@ import { useUser } from '../../contexts/UserContext';
 
 const { Sider, Content } = Layout;
 
+// 模拟数据
+const mockHistories = [
+  { id: '1', title: '关于React的讨论' },
+  { id: '2', title: 'TypeScript学习' },
+  { id: '3', title: '项目架构设计' },
+  { id: '4', title: '数据库优化' },
+];
+
 interface Message {
   content: string;
   type: 'user' | 'bot';
@@ -18,45 +26,33 @@ interface Message {
 interface ChatHistory {
   id: string;
   title: string;
-  lastMessage: string;
-  timestamp: number;
 }
 
 export default function ChatbotPage() {
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
-  const [chatHistories, setChatHistories] = useState<ChatHistory[]>([]);
+  const [chatHistories, setChatHistories] = useState<ChatHistory[]>(mockHistories);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const { userName } = useUser();
-
-  // 获取历史对话记录
-  useEffect(() => {
-    const fetchChatHistories = async () => {
-      try {
-        const response = await request.get('/console/api/chat/histories');
-        if (response.result === 'success') {
-          setChatHistories(response.data);
-        }
-      } catch (error) {
-        message.error('获取历史记录失败');
-      }
-    };
-
-    fetchChatHistories();
-  }, []);
 
   // 选择历史对话
   const handleSelectChat = async (chatId: string) => {
     setSelectedChatId(chatId);
-    try {
-      const response = await request.get(`/console/api/chat/history/${chatId}`);
-      if (response.result === 'success') {
-        setMessages(response.data.messages);
-      }
-    } catch (error) {
-      message.error('获取对话内容失败');
-    }
+    // TODO: 从后端获取历史消息
+    const mockMessages: Message[] = [
+      {
+        content: '这是历史消息',
+        type: 'user',
+        timestamp: Date.now() - 1000 * 60,
+      },
+      {
+        content: '这是一条模拟的回复消息',
+        type: 'bot',
+        timestamp: Date.now(),
+      },
+    ];
+    setMessages(mockMessages);
   };
 
   // 创建新对话
@@ -81,37 +77,18 @@ export default function ChatbotPage() {
     setLoading(true);
 
     try {
-      const response = await request.post('/console/api/chat', {
-        message: inputValue,
-        user: userName,
-        chatId: selectedChatId,
-      });
-
-      if (response.result === 'success') {
+      // TODO: 实现实际的聊天API
+      setTimeout(() => {
         const botMessage: Message = {
-          content: response.data.reply,
+          content: '这是一个模拟的回复',
           type: 'bot',
           timestamp: Date.now(),
         };
         setMessages(prev => [...prev, botMessage]);
-        
-        // 更新历史记录
-        if (response.data.chatId) {
-          setSelectedChatId(response.data.chatId);
-          const fetchChatHistories = async () => {
-            const historyResponse = await request.get('/console/api/chat/histories');
-            if (historyResponse.result === 'success') {
-              setChatHistories(historyResponse.data);
-            }
-          };
-          fetchChatHistories();
-        }
-      } else {
-        message.error('获取回复失败');
-      }
+        setLoading(false);
+      }, 1000);
     } catch (error) {
       message.error('网络错误，请稍后重试');
-    } finally {
       setLoading(false);
     }
   };
@@ -140,9 +117,8 @@ export default function ChatbotPage() {
               onClick={() => handleSelectChat(chat.id)}
             >
               <List.Item.Meta
-                avatar={<MessageOutlined />}
+                avatar={<MessageOutlined style={{ fontSize: '20px', color: '#1890ff' }} />}
                 title={chat.title}
-                description={chat.lastMessage}
               />
             </List.Item>
           )}
