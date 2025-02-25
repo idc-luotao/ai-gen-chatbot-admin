@@ -65,25 +65,25 @@ export default function ChatbotPage() {
     {
       id: '1',
       title: '人工智能基础知识',
-      lastMessage: 'GPT是什么？它和传统的NLP模型有什么区别？',
+      lastMessage: '',
       timestamp: Date.now() - 6980000
     },
     {
       id: '2',
       title: '机器学习应用',
-      lastMessage: '机器学习在金融领域有哪些具体应用？',
+      lastMessage: '',
       timestamp: Date.now() - 86400000
     },
     {
       id: '3',
       title: '深度学习框架',
-      lastMessage: '如何选择适合的深度学习框架？',
+      lastMessage: '',
       timestamp: Date.now() - 172800000
     },
     {
       id: '4',
       title: '计算机视觉讨论',
-      lastMessage: '目标检测和图像分割的区别是什么？',
+      lastMessage: '',
       timestamp: Date.now() - 259200000
     }
   ]);
@@ -176,13 +176,7 @@ export default function ChatbotPage() {
               className={`${styles.sessionItem} ${selectedSession === session.id ? styles.selectedSession : ''}`}
               onClick={() => setSelectedSession(session.id)}
             >
-              <div className={styles.sessionInfo}>
-                <div className={styles.sessionTitle}>{session.title}</div>
-                <div className={styles.sessionLastMessage}>
-                  <span>{session.lastMessage}</span>
-                  <span className={styles.sessionTime}>{formatTime(session.timestamp)}</span>
-                </div>
-              </div>
+              <div className={styles.sessionTitle}>{session.title}</div>
               <Button 
                 type="text" 
                 icon={<DeleteOutlined />} 
