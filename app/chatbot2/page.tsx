@@ -77,78 +77,40 @@ export default function ChatbotPage() {
     }
   };
 
-  // 获取特定会话的消息（使用模拟数据）
+  // 获取特定会话的消息
   const fetchMessages = async (conversationId: string) => {
     try {
       setLoadingMessages(true);
+      const userName = getUserName();
+      const token = "app-BFJYGd9Nlbyi5Hhj9RvmyusG";
+      const url = `/v1/messages?conversation_id=${conversationId}&user=${userName}`;
       
-      // 模拟网络延迟
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const response = await request.get(url, token);
       
-      // 模拟消息数据
-      const mockMessages: Message[] = [
-        {
-          id: '1',
+      if (response.data.data) {
+        const messageList1 = response.data.data.map((msg: any) => ({
+          id: msg.id,
           type: 'user',
-          content: '你好，我想了解一下关于人工智能的基础知识。',
-          timestamp: Date.now() - 1000 * 60 * 30
-        },
-        {
-          id: '2',
+          content: msg.query,
+          timestamp: new Date(msg.created_at).getTime()
+        }));
+        // 将API返回的消息格式转换为应用中使用的格式
+        const messageList2 = response.data.data.map((msg: any) => ({
+          id: msg.id,
           type: 'bot',
-          content: '当然可以。人工智能（AI）是一个广泛的领域，主要研究如何让计算机模拟人类智能。它包括几个主要方向：\n\n1. 机器学习：让计算机通过数据学习和改进\n2. 深度学习：使用神经网络处理复杂问题\n3. 自然语言处理：理解和生成人类语言\n4. 计算机视觉：理解和处理图像数据\n\n您对哪个方向特别感兴趣？',
-          timestamp: Date.now() - 1000 * 60 * 29
-        },
-        {
-          id: '3',
-          type: 'user',
-          content: '我对自然语言处理比较感兴趣，能详细介绍一下吗？',
-          timestamp: Date.now() - 1000 * 60 * 25
-        },
-        {
-          id: '4',
-          type: 'bot',
-          content: '自然语言处理（NLP）是AI的重要分支，主要研究计算机如何理解和处理人类语言。以下是一些关键应用：\n\n1. 机器翻译：在不同语言间进行翻译\n2. 文本分类：对文档进行自动分类\n3. 情感分析：理解文本中的情感倾向\n4. 问答系统：自动回答用户问题\n5. 文本生成：创建人类可读的文本\n\n现代NLP主要基于深度学习模型，如Transformer架构，代表作品有GPT和BERT等。',
-          timestamp: Date.now() - 1000 * 60 * 24
-        },
-        {
-          id: '5',
-          type: 'user',
-          content: '这些模型是如何学习理解人类语言的？',
-          timestamp: Date.now() - 1000 * 60 * 20
-        },
-        {
-          id: '6',
-          type: 'bot',
-          content: '这些模型通过以下步骤学习理解人类语言：\n\n1. 预训练：在大量文本数据上学习语言的基本模式\n2. 词向量：将单词转换为计算机可理解的数值向量\n3. 注意力机制：学习识别文本中的重要关系\n4. 上下文理解：考虑词语在不同语境中的含义\n5. 微调：针对特定任务进行优化\n\n比如GPT-3就是在超过4500亿个词语上训练得到的，这使它能够理解和生成接近人类水平的文本。',
-          timestamp: Date.now() - 1000 * 60 * 19
-        }
-      ];
-      
-      // 根据会话ID生成不同的消息内容
-      const sessionIdNum = parseInt(conversationId.replace(/\D/g, '')) || 0;
-      const adjustedMessages = mockMessages.map(msg => {
-        // 根据会话ID调整消息内容，使不同会话显示不同内容
-        if (sessionIdNum % 3 === 0) {
-          return msg;
-        } else if (sessionIdNum % 3 === 1) {
-          return {
-            ...msg,
-            content: msg.type === 'user' 
-              ? `我想了解机器学习的应用场景。` 
-              : `机器学习在多个领域有广泛应用：\n\n1. 医疗：疾病诊断和预测\n2. 金融：风险评估和欺诈检测\n3. 零售：个性化推荐系统\n4. 制造业：预测性维护\n5. 交通：自动驾驶技术\n\n这些应用都依赖于从大量数据中学习模式的能力。`
-          };
-        } else {
-          return {
-            ...msg,
-            content: msg.type === 'user' 
-              ? `深度学习和传统机器学习有什么区别？` 
-              : `深度学习与传统机器学习的主要区别：\n\n1. 特征提取：深度学习自动提取特征，传统机器学习需要手动设计\n2. 数据量：深度学习通常需要更大的数据集\n3. 计算资源：深度学习需要更强的计算能力\n4. 模型复杂度：深度学习模型层次更深，参数更多\n5. 可解释性：深度学习模型通常是"黑盒"，较难解释\n\n深度学习在处理非结构化数据（如图像、文本）时表现尤为出色。`
-          };
-        }
-      });
-      
-      setMessages(adjustedMessages);
+          content: msg.answer,
+          timestamp: new Date(msg.created_at).getTime()
+        }));
+        // 将API返回的消息格式转换为应用中使用的格式
+        const messageList = messageList1.concat(messageList2);
+
+        // 按时间顺序排序消息
+        messageList.sort((a: Message, b: Message) => a.timestamp - b.timestamp);
+        
+        setMessages(messageList);
+      } else {
+        setMessages([]);
+      }
     } catch (error) {
       message.error('获取消息失败');
       console.error('Error fetching messages:', error);
@@ -180,16 +142,60 @@ export default function ChatbotPage() {
     const currentInput = inputValue;
     setInputValue('');
 
-    // 模拟机器人回复
-    setTimeout(() => {
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        type: 'bot',
-        content: '这是一个模拟的机器人回复消息。根据您的问题，我需要更多信息来提供准确的回答。您能否提供更多细节？',
-        timestamp: Date.now()
-      };
-      setMessages(prev => [...prev, botMessage]);
-    }, 1000);
+    try {
+      const userName = getUserName();
+      const token = "app-BFJYGd9Nlbyi5Hhj9RvmyusG";
+      
+      // 如果没有选中的会话，先创建一个新会话
+      let conversationId = selectedSession;
+      
+      if (!conversationId) {
+        // 创建新会话
+        const createConvResponse = await request.post(
+          '/v1/conversations', 
+          token, 
+          { 
+            user: userName,
+            name: currentInput.length > 20 ? currentInput.substring(0, 20) + '...' : currentInput
+          }
+        );
+        
+        if (createConvResponse.data.data) {
+          conversationId = createConvResponse.data.data.id;
+          const newConv = {
+            id: conversationId,
+            title: createConvResponse.data.data.name || '新对话',
+            lastMessage: currentInput,
+            timestamp: Date.now()
+          };
+          
+          setSessions(prev => [newConv, ...prev]);
+          setSelectedSession(conversationId);
+        } else {
+          message.error('创建会话失败');
+          return;
+        }
+      }
+      
+      // 发送消息
+      await request.post(
+        '/v1/messages', 
+        token, 
+        {
+          conversation_id: conversationId,
+          content: currentInput,
+          role: 'user',
+          user: userName
+        }
+      );
+      
+      // 刷新消息列表
+      fetchMessages(conversationId);
+      
+    } catch (error) {
+      message.error('发送消息失败');
+      console.error('Error sending message:', error);
+    }
   };
 
   const handleNewChat = () => {
@@ -247,8 +253,9 @@ export default function ChatbotPage() {
                 onClick={async (e) => {
                   e.stopPropagation();
                   try {
-                    // 模拟网络延迟
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                    const userName = getUserName();
+                    const token = "app-BFJYGd9Nlbyi5Hhj9RvmyusG";
+                    await request.delete(`/v1/conversations/${session.id}?user=${userName}`, token);
                     
                     // 从列表中移除
                     setSessions(prev => prev.filter(s => s.id !== session.id));
