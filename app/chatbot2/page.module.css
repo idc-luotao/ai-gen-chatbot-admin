@@ -119,6 +119,22 @@
   padding-bottom: 0;
 }
 
+.loadingMessages {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+  color: #999;
+  font-size: 14px;
+}
+
+.emptyMessages {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 300px;
+}
+
 .userMessage,
 .botMessage {
   margin: 16px 0;
