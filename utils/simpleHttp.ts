@@ -25,7 +25,7 @@ interface RequestMethods {
   get: (url: string, token: string, config?: AxiosRequestConfig) => Promise<any>;
   post: (url: string, token: string, data?: any, config?: AxiosRequestConfig) => Promise<any>;
   put: (url: string, token: string, data?: any, config?: AxiosRequestConfig) => Promise<any>;
-  delete: (url: string, token: string, config?: AxiosRequestConfig) => Promise<any>;
+  delete: (url: string, token: string, data?: any, config?: AxiosRequestConfig) => Promise<any>;
 }
 
 const request: RequestMethods = {
@@ -50,12 +50,12 @@ const request: RequestMethods = {
     };
     return http.put(url, data, config)
   },
-  delete: (url, token, config = {}) => {
+  delete: (url, token, data = {}, config = {}) => {
     config.headers = {
       ...config.headers,
       Authorization: `Bearer ${token}`
     };
-    return http.delete(url, config)
+    return http.delete(url, { data, ...config })
   },
 };
 

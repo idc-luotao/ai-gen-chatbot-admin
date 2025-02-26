@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Layout, List, Input, Button, Avatar, Empty, Upload, message } from 'antd';
-import { SendOutlined, DeleteOutlined, PlusOutlined, PaperClipOutlined } from '@ant-design/icons';
+import { Layout, List, Input, Button, Avatar, Empty, Upload, message, Modal } from 'antd';
+import { SendOutlined, DeleteOutlined, PlusOutlined, PaperClipOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import styles from './page.module.css';
 import { request } from '../../utils/simpleHttp';
 import { getUserName } from '../../utils/storage';
 
 const { Header, Content, Sider } = Layout;
+const { confirm } = Modal;
 
 interface Message {
   id: string;
@@ -250,27 +251,43 @@ export default function ChatbotPage() {
                 type="text" 
                 icon={<DeleteOutlined />} 
                 className={styles.deleteButton}
-                onClick={async (e) => {
+                onClick={(e) => {
                   e.stopPropagation();
-                  try {
-                    const userName = getUserName();
-                    const token = "app-BFJYGd9Nlbyi5Hhj9RvmyusG";
-                    await request.delete(`/v1/conversations/${session.id}?user=${userName}`, token);
-                    
-                    // 从列表中移除
-                    setSessions(prev => prev.filter(s => s.id !== session.id));
-                    
-                    // 如果删除的是当前选中的会话，清空选择
-                    if (selectedSession === session.id) {
-                      setSelectedSession(null);
-                      setMessages([]);
+                  
+                  // 显示确认对话框
+                  confirm({
+                    title: '确认删除',
+                    icon: <ExclamationCircleOutlined />,
+                    content: '确定要删除这个会话吗？此操作不可恢复。',
+                    okText: '确认',
+                    cancelText: '取消',
+                    onOk: async () => {
+                      try {
+                        const userName = getUserName();
+                        const token = "app-BFJYGd9Nlbyi5Hhj9RvmyusG";
+                        // 使用 DELETE 请求，并在请求体中传递 user 参数
+                        await request.delete(
+                          `/v1/conversations/${session.id}`, 
+                          token,
+                          { user: userName }
+                        );
+                        
+                        // 从列表中移除
+                        setSessions(prev => prev.filter(s => s.id !== session.id));
+                        
+                        // 如果删除的是当前选中的会话，清空选择
+                        if (selectedSession === session.id) {
+                          setSelectedSession(null);
+                          setMessages([]);
+                        }
+                        
+                        message.success('删除成功');
+                      } catch (error) {
+                        message.error('删除失败');
+                        console.error('Error deleting conversation:', error);
+                      }
                     }
-                    
-                    message.success('删除成功');
-                  } catch (error) {
-                    message.error('删除失败');
-                    console.error('Error deleting conversation:', error);
-                  }
+                  });
                 }}
               />
             </List.Item>
