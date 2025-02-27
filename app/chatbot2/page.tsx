@@ -184,115 +184,119 @@ export default function ChatbotPage() {
       }
 
       // 调用流式API
-      // try {
-      //   console.log('开始流式请求');
+      try {
+        console.log('开始流式请求');
 
-      //   // 准备请求数据
-      //   const requestData = {
-      //     inputs: {},
-      //     query: currentInput,
-      //     response_mode: "streaming",
-      //     conversation_id: conversationId || "",
-      //     user: userName,
-      //     files: files
-      //   };
+        // 准备请求数据
+        const requestData = {
+          inputs: {},
+          query: currentInput,
+          response_mode: "streaming",
+          conversation_id: conversationId || "",
+          user: userName,
+          files: files
+        };
 
-      //   // 使用simpleHttp中的stream方法
-      //   await request.stream(
-      //     '/v1/chat-messages',
-      //     token,
-      //     requestData,
-      //     (jsonData) => {
-      //       // 处理每个数据块
-      //       console.log('收到数据块:', jsonData);
+        // 使用simpleHttp中的stream方法
+        await request.stream(
+          '/v1/chat-messages',
+          token,
+          requestData,
+          (jsonData) => {
+            // 处理每个数据块
+            console.log('收到数据块:', jsonData);
 
-      //       if (jsonData.event === 'message' && jsonData.answer !== undefined) {
-      //         // 更新内容
-      //         const streamContent = jsonData.answer;
-      //         console.log('更新消息内容:', streamContent);
+            if (jsonData.event === 'message' && jsonData.answer !== undefined) {
+              // 更新内容
+              const streamContent = jsonData.answer;
+              console.log('更新消息内容:', streamContent);
 
-      //         // 更新消息
-      //         setMessages(prev => {
-      //           const updatedMessages = [...prev];
-      //           const botMessageIndex = updatedMessages.findIndex(msg => msg.id === botMessageId);
+              // 更新消息 - 使用函数式更新确保基于最新状态
+              setMessages(prev => {
+                // 查找当前机器人消息
+                const currentMessage = prev.find(msg => msg.id === botMessageId);
+                
+                // 如果找不到消息或消息已经包含了这个内容，则不更新
+                if (!currentMessage) return prev;
+                
+                // 创建新的消息列表，替换机器人消息
+                return prev.map(msg => 
+                  msg.id === botMessageId
+                    ? { ...msg, content: msg.content + streamContent }
+                    : msg
+                );
+              });
+            } else if (jsonData.event === 'message_end') {
+              console.log('收到消息结束事件');
+            }
+          },
+          // 完成回调
+          () => {
+            console.log('流式传输完成');
+            setIsStreaming(false);
 
-      //           if (botMessageIndex !== -1) {
-      //             updatedMessages[botMessageIndex].content += streamContent;
-      //           }
+            // 更新最终状态
+            setMessages(prev => {
+              return prev.map(msg => 
+                msg.id === botMessageId
+                  ? { ...msg, isStreaming: false }
+                  : msg
+              );
+            });
+          },
+          // 错误回调
+          (error) => {
+            console.error('流式请求错误:', error);
+            setIsStreaming(false);
 
-      //           return updatedMessages;
-      //         });
-      //       } else if (jsonData.event === 'message_end') {
-      //         console.log('收到消息结束事件');
-      //       }
-      //     },
-      //     // 完成回调
-      //     () => {
-      //       console.log('流式传输完成');
-      //       setIsStreaming(false);
+            // 更新错误状态
+            setMessages(prev =>
+              prev.map(msg =>
+                msg.id === botMessageId
+                  ? { ...msg, content: '获取回复失败，请重试', isStreaming: false }
+                  : msg
+              )
+            );
 
-      //       // 更新最终状态
-      //       setMessages(prev => {
-      //         return prev.map(msg => 
-      //           msg.id === botMessageId
-      //             ? { ...msg, isStreaming: false }
-      //             : msg
-      //         );
-      //       });
-      //     },
-      //     // 错误回调
-      //     (error) => {
-      //       console.error('流式请求错误:', error);
-      //       setIsStreaming(false);
+            message.error('获取回复失败');
+          }
+        );
+      } catch (error) {
+        setIsStreaming(false);
+        message.error('获取回复失败');
+        console.error('Error streaming response:', error);
 
-      //       // 更新错误状态
-      //       setMessages(prev =>
-      //         prev.map(msg =>
-      //           msg.id === botMessageId
-      //             ? { ...msg, content: '获取回复失败，请重试', isStreaming: false }
-      //             : msg
-      //         )
-      //       );
-
-      //       message.error('获取回复失败');
-      //     }
-      //   );
-      // } catch (error) {
-      //   setIsStreaming(false);
-      //   message.error('获取回复失败');
-      //   console.error('Error streaming response:', error);
-
-      //   // 移除空的机器人消息或标记为错误
-      //   setMessages(prev =>
-      //     prev.map(msg =>
-      //       msg.id === botMessageId
-      //         ? { ...msg, content: '获取回复失败，请重试', isStreaming: false }
-      //         : msg
-      //     )
-      //   );
-      // }
-
-      const requestDataBlocking = {
-        inputs: {},
-        query: currentInput,
-        response_mode: "blocking",
-        conversation_id: conversationId || "",
-        user: userName,
-        files: files
-      };
-
-      // 使用simpleHttp中的stream方法
-      const responseBlocking = await request.post('/v1/chat-messages', token, requestDataBlocking);
-      if(responseBlocking.data.answer){
+        // 移除空的机器人消息或标记为错误
         setMessages(prev =>
           prev.map(msg =>
             msg.id === botMessageId
-              ? { ...msg, content: responseBlocking.data.answer, isStreaming: false }
+              ? { ...msg, content: '获取回复失败，请重试', isStreaming: false }
               : msg
           )
         );
-        setIsStreaming(false);
       }
+
+      // const requestDataBlocking = {
+      //   inputs: {},
+      //   query: currentInput,
+      //   response_mode: "blocking",
+      //   conversation_id: conversationId || "",
+      //   user: userName,
+      //   files: files
+      // };
+
+      // // 使用simpleHttp中的stream方法
+      // const responseBlocking = await request.post('/v1/chat-messages', token, requestDataBlocking);
+      // if(responseBlocking.data.answer){
+      //   setMessages(prev =>
+      //     prev.map(msg =>
+      //       msg.id === botMessageId
+      //         ? { ...msg, content: responseBlocking.data.answer, isStreaming: false }
+      //         : msg
+      //     )
+      //   );
+      //   setIsStreaming(false);
+      // }
       // for(let i = 0; i < 9; i++) {
       //   setMessages(prev =>
       //     prev.map(msg =>
