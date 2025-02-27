@@ -70,21 +70,21 @@ const request: RequestMethods = {
       console.log('开始流式请求:', url);
       console.log('请求数据:', data);
       
-      // 使用axios进行流式请求
-      const response = await axios({
-        method: 'post',
-        url: `${http.defaults.baseURL}${url}`,
-        data: data,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        responseType: 'stream',
-        onDownloadProgress: (progressEvent) => {
-          // 这个回调在浏览器环境中不会提供原始数据
-          console.log('下载进度:', progressEvent);
-        }
-      });
+      // // 使用axios进行流式请求
+      // const response = await axios({
+      //   method: 'post',
+      //   url: `${http.defaults.baseURL}${url}`,
+      //   data: data,
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     'Authorization': `Bearer ${token}`
+      //   },
+      //   responseType: 'stream',
+      //   onDownloadProgress: (progressEvent) => {
+      //     // 这个回调在浏览器环境中不会提供原始数据
+      //     console.log('下载进度:', progressEvent);
+      //   }
+      // });
       
       // 由于axios在浏览器环境中不能直接处理流式数据
       // 我们需要使用fetch API来实现流式处理
