@@ -56,11 +56,11 @@ export default function ChatbotPage() {
       const userName = getUserName();
       const token = API_TOKEN; // 从配置文件获取 token
       const url = `/v1/conversations?last_id=&limit=20&user=${userName}`;
-      
+
       setLoading(true);
       const response = await request.get(url, token);
       setLoading(false);
-      
+
       if (response.data.data) {
         const conversations = response.data.data.map((conv: any) => ({
           id: conv.id,
@@ -69,7 +69,7 @@ export default function ChatbotPage() {
           timestamp: new Date(conv.updated_at || conv.created_at).getTime()
         }));
         setSessions(conversations);
-        
+
         // 如果有会话，默认选择第一个
         if (conversations.length > 0 && !selectedSession) {
           setSelectedSession(conversations[0].id);
@@ -89,19 +89,19 @@ export default function ChatbotPage() {
       const userName = getUserName();
       const token = API_TOKEN; // 从配置文件获取 token
       const url = `/v1/messages?conversation_id=${conversationId}&user=${userName}`;
-      
+
       const response = await request.get(url, token);
-      
+
       if (response.data.data) {
         const messageList1 = response.data.data.map((msg: any) => ({
-          id: 'user-'+msg.id,
+          id: 'user-' + msg.id,
           type: 'user',
           content: msg.query,
           timestamp: new Date(msg.created_at).getTime()
         }));
         // 将API返回的消息格式转换为应用中使用的格式
         const messageList2 = response.data.data.map((msg: any) => ({
-          id: 'bot-'+msg.id,
+          id: 'bot-' + msg.id,
           type: 'bot',
           content: msg.answer,
           timestamp: new Date(msg.created_at).getTime()
@@ -111,7 +111,7 @@ export default function ChatbotPage() {
 
         // 按时间顺序排序消息
         messageList.sort((a: Message, b: Message) => a.timestamp - b.timestamp);
-        
+
         setMessages(messageList);
       } else {
         setMessages([]);
@@ -152,21 +152,21 @@ export default function ChatbotPage() {
     try {
       const userName = getUserName();
       const token = API_TOKEN; // 从配置文件获取 token
-      
+
       // 如果没有选中的会话，先创建一个新会话
       let conversationId = selectedSession;
-      
+
       if (!conversationId) {
         // 创建新会话
         const createConvResponse = await request.post(
-          '/v1/conversations', 
-          token, 
-          { 
+          '/v1/conversations',
+          token,
+          {
             user: userName,
             name: currentInput.length > 20 ? currentInput.substring(0, 20) + '...' : currentInput
           }
         );
-        
+
         if (createConvResponse.data.data) {
           conversationId = createConvResponse.data.data.id;
           const newConv = {
@@ -175,7 +175,7 @@ export default function ChatbotPage() {
             lastMessage: currentInput,
             timestamp: Date.now()
           };
-          
+
           setSessions(prev => [newConv, ...prev]);
           setSelectedSession(conversationId);
         } else {
@@ -183,10 +183,10 @@ export default function ChatbotPage() {
           return;
         }
       }
-      
+
       // 创建一个空的机器人回复消息，用于流式显示
       const botMessageId = `bot-${Date.now()}`;
-      
+
       const botMessage: Message = {
         id: botMessageId,
         type: 'bot',
@@ -210,93 +210,124 @@ export default function ChatbotPage() {
       }
 
       // 调用流式API
-      try {
-        console.log('开始流式请求');
-        
-        // 准备请求数据
-        const requestData = {
-          inputs: {},
-          query: currentInput,
-          response_mode: "streaming",
-          conversation_id: conversationId || "",
-          user: userName,
-          files: files
-        };
-        
-        // 使用simpleHttp中的stream方法
-        await request.stream(
-          '/v1/chat-messages',
-          token,
-          requestData,
-          (jsonData) => {
-            // 处理每个数据块
-            console.log('收到数据块:', jsonData);
-            
-            if (jsonData.event === 'message' && jsonData.answer !== undefined) {
-              // 更新内容
-              const streamContent = jsonData.answer;
-              console.log('更新消息内容:', streamContent);
-              
-              // 更新消息
-              setMessages(prev => {
-                const updatedMessages = [...prev];
-                const botMessageIndex = updatedMessages.findIndex(msg => msg.id === botMessageId);
-                
-                if (botMessageIndex !== -1) {
-                  updatedMessages[botMessageIndex].content += streamContent;
-                }
-                
-                return updatedMessages;
-              });
-            } else if (jsonData.event === 'message_end') {
-              console.log('收到消息结束事件');
-            }
-          },
-          // 完成回调
-          () => {
-            console.log('流式传输完成');
-            setIsStreaming(false);
-            
-            // 更新最终状态
-            setMessages(prev => {
-              return prev.map(msg => 
-                msg.id === botMessageId
-                  ? { ...msg, isStreaming: false }
-                  : msg
-              );
-            });
-          },
-          // 错误回调
-          (error) => {
-            console.error('流式请求错误:', error);
-            setIsStreaming(false);
-            
-            // 更新错误状态
-            setMessages(prev =>
-              prev.map(msg =>
-                msg.id === botMessageId
-                  ? { ...msg, content: '获取回复失败，请重试', isStreaming: false }
-                  : msg
-              )
-            );
-            
-            message.error('获取回复失败');
-          }
-        );
-      } catch (error) {
-        setIsStreaming(false);
-        message.error('获取回复失败');
-        console.error('Error streaming response:', error);
+      // try {
+      //   console.log('开始流式请求');
 
-        // 移除空的机器人消息或标记为错误
+      //   // 准备请求数据
+      //   const requestData = {
+      //     inputs: {},
+      //     query: currentInput,
+      //     response_mode: "streaming",
+      //     conversation_id: conversationId || "",
+      //     user: userName,
+      //     files: files
+      //   };
+
+      //   // 使用simpleHttp中的stream方法
+      //   await request.stream(
+      //     '/v1/chat-messages',
+      //     token,
+      //     requestData,
+      //     (jsonData) => {
+      //       // 处理每个数据块
+      //       console.log('收到数据块:', jsonData);
+
+      //       if (jsonData.event === 'message' && jsonData.answer !== undefined) {
+      //         // 更新内容
+      //         const streamContent = jsonData.answer;
+      //         console.log('更新消息内容:', streamContent);
+
+      //         // 更新消息
+      //         setMessages(prev => {
+      //           const updatedMessages = [...prev];
+      //           const botMessageIndex = updatedMessages.findIndex(msg => msg.id === botMessageId);
+
+      //           if (botMessageIndex !== -1) {
+      //             updatedMessages[botMessageIndex].content += streamContent;
+      //           }
+
+      //           return updatedMessages;
+      //         });
+      //       } else if (jsonData.event === 'message_end') {
+      //         console.log('收到消息结束事件');
+      //       }
+      //     },
+      //     // 完成回调
+      //     () => {
+      //       console.log('流式传输完成');
+      //       setIsStreaming(false);
+
+      //       // 更新最终状态
+      //       setMessages(prev => {
+      //         return prev.map(msg => 
+      //           msg.id === botMessageId
+      //             ? { ...msg, isStreaming: false }
+      //             : msg
+      //         );
+      //       });
+      //     },
+      //     // 错误回调
+      //     (error) => {
+      //       console.error('流式请求错误:', error);
+      //       setIsStreaming(false);
+
+      //       // 更新错误状态
+      //       setMessages(prev =>
+      //         prev.map(msg =>
+      //           msg.id === botMessageId
+      //             ? { ...msg, content: '获取回复失败，请重试', isStreaming: false }
+      //             : msg
+      //         )
+      //       );
+
+      //       message.error('获取回复失败');
+      //     }
+      //   );
+      // } catch (error) {
+      //   setIsStreaming(false);
+      //   message.error('获取回复失败');
+      //   console.error('Error streaming response:', error);
+
+      //   // 移除空的机器人消息或标记为错误
+      //   setMessages(prev =>
+      //     prev.map(msg =>
+      //       msg.id === botMessageId
+      //         ? { ...msg, content: '获取回复失败，请重试', isStreaming: false }
+      //         : msg
+      //     )
+      //   );
+      // }
+
+      const requestDataBlocking = {
+        inputs: {},
+        query: currentInput,
+        response_mode: "blocking",
+        conversation_id: conversationId || "",
+        user: userName,
+        files: files
+      };
+
+      // 使用simpleHttp中的stream方法
+      const responseBlocking = await request.post('/v1/chat-messages', token, requestDataBlocking);
+      if(responseBlocking.data.answer){
         setMessages(prev =>
           prev.map(msg =>
             msg.id === botMessageId
-              ? { ...msg, content: '获取回复失败，请重试', isStreaming: false }
+              ? { ...msg, content: responseBlocking.data.answer, isStreaming: false }
               : msg
           )
         );
       }
+      // for(let i = 0; i < 9; i++) {
+      //   setMessages(prev =>
+      //     prev.map(msg =>
+      //       msg.id === botMessageId
+      //         ? { ...msg, content: msg.content+(i+1), isStreaming: false }
+      //         : msg
+      //     )
+      //   );
+      // }
+
     } catch (error) {
       message.error('发送消息失败');
       console.error('Error sending message:', error);
@@ -317,13 +348,13 @@ export default function ChatbotPage() {
     if (diff < 24 * 60 * 60 * 1000) {
       return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
     }
-    
+
     // 如果是最近7天的消息，显示星期几
     if (diff < 7 * 24 * 60 * 60 * 1000) {
       const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
       return days[date.getDay()];
     }
-    
+
     // 其他情况显示日期
     return `${date.getMonth() + 1}月${date.getDate()}日`;
   };
@@ -332,9 +363,9 @@ export default function ChatbotPage() {
     <Layout className={styles.pageContainer}>
       <Sider width={300} className={styles.sider}>
         <div className={styles.sessionHeader}>
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />} 
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
             onClick={handleNewChat}
             className={styles.newChatButton}
           >
@@ -351,13 +382,13 @@ export default function ChatbotPage() {
               onClick={() => setSelectedSession(session.id)}
             >
               <div className={styles.sessionTitle}>{session.title}</div>
-              <Button 
-                type="text" 
-                icon={<DeleteOutlined />} 
+              <Button
+                type="text"
+                icon={<DeleteOutlined />}
                 className={styles.deleteButton}
                 onClick={(e) => {
                   e.stopPropagation();
-                  
+
                   // 显示确认对话框
                   confirm({
                     title: '确认删除',
@@ -371,20 +402,20 @@ export default function ChatbotPage() {
                         const token = API_TOKEN; // 从配置文件获取 token
                         // 使用 DELETE 请求，并在请求体中传递 user 参数
                         await request.delete(
-                          `/v1/conversations/${session.id}`, 
+                          `/v1/conversations/${session.id}`,
                           token,
                           { user: userName }
                         );
-                        
+
                         // 从列表中移除
                         setSessions(prev => prev.filter(s => s.id !== session.id));
-                        
+
                         // 如果删除的是当前选中的会话，清空选择
                         if (selectedSession === session.id) {
                           setSelectedSession(null);
                           setMessages([]);
                         }
-                        
+
                         message.success('删除成功');
                       } catch (error) {
                         message.error('删除失败');
@@ -413,7 +444,7 @@ export default function ChatbotPage() {
                     >
                       {msg.type === 'user' ? (
                         <>
-                          <Avatar 
+                          <Avatar
                             size={32}
                             style={{ backgroundColor: '#1677ff' }}
                           >
@@ -428,7 +459,7 @@ export default function ChatbotPage() {
                         </>
                       ) : (
                         <>
-                          <Avatar 
+                          <Avatar
                             size={32}
                             style={{ backgroundColor: '#1677ff' }}
                           >
@@ -469,14 +500,14 @@ export default function ChatbotPage() {
                     }}
                   />
                   <div className={styles.inputActions}>
-                    <Input 
-                      placeholder="输入图片URL" 
-                      value={imageUrl} 
-                      onChange={(e) => setImageUrl(e.target.value)} 
+                    <Input
+                      placeholder="输入图片URL"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
                       style={{ width: '200px', marginRight: '10px' }}
                     />
-                    <Button 
-                      type="primary" 
+                    <Button
+                      type="primary"
                       onClick={handleSendMessage}
                       loading={isStreaming}
                       disabled={isStreaming}
