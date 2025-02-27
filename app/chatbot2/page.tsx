@@ -6,6 +6,7 @@ import { SendOutlined, DeleteOutlined, PlusOutlined, PaperClipOutlined, Exclamat
 import styles from './page.module.css';
 import { request } from '../../utils/simpleHttp';
 import { getUserName } from '../../utils/storage';
+import { API_TOKEN } from '../../utils/config';
 
 const { Header, Content, Sider } = Layout;
 const { confirm } = Modal;
@@ -50,7 +51,7 @@ export default function ChatbotPage() {
   const fetchConversations = async () => {
     try {
       const userName = getUserName();
-      const token = "app-BFJYGd9Nlbyi5Hhj9RvmyusG"; // 使用固定的 token，实际应用中应该从存储中获取
+      const token = API_TOKEN; // 从配置文件获取 token
       const url = `/v1/conversations?last_id=&limit=20&user=${userName}`;
       
       setLoading(true);
@@ -83,7 +84,7 @@ export default function ChatbotPage() {
     try {
       setLoadingMessages(true);
       const userName = getUserName();
-      const token = "app-BFJYGd9Nlbyi5Hhj9RvmyusG";
+      const token = API_TOKEN; // 从配置文件获取 token
       const url = `/v1/messages?conversation_id=${conversationId}&user=${userName}`;
       
       const response = await request.get(url, token);
@@ -145,7 +146,7 @@ export default function ChatbotPage() {
 
     try {
       const userName = getUserName();
-      const token = "app-BFJYGd9Nlbyi5Hhj9RvmyusG";
+      const token = API_TOKEN; // 从配置文件获取 token
       
       // 如果没有选中的会话，先创建一个新会话
       let conversationId = selectedSession;
@@ -264,7 +265,7 @@ export default function ChatbotPage() {
                     onOk: async () => {
                       try {
                         const userName = getUserName();
-                        const token = "app-BFJYGd9Nlbyi5Hhj9RvmyusG";
+                        const token = API_TOKEN; // 从配置文件获取 token
                         // 使用 DELETE 请求，并在请求体中传递 user 参数
                         await request.delete(
                           `/v1/conversations/${session.id}`, 
