@@ -142,201 +142,231 @@ export default function ChatbotPage() {
       timestamp: Date.now()
     };
 
+    
+
+    const botMessageId = `bot-${Date.now()}`;
+    const botMessage: Message = {
+      id: botMessageId,
+      type: 'bot',
+      content: '正在思考...',
+      timestamp: Date.now(),
+      isStreaming: true
+    };
+
     // 先在界面上显示用户消息
     setMessages(prev => [...prev, newMessage]);
-    const currentInput = inputValue;
-    setInputValue('');
-    const currentImageUrl = imageUrl;
-    setImageUrl(''); // 清空图片URL
+    // 添加空的机器人消息到消息列表
+    setMessages(prev => [...prev, botMessage]);
 
-    try {
-      const userName = getUserName();
-      const token = API_TOKEN; // 从配置文件获取 token
+    // try {
+    //   const userName = getUserName();
+    //   const token = API_TOKEN; // 从配置文件获取 token
 
-      // 如果没有选中的会话，先创建一个新会话
-      let conversationId = selectedSession;
+    //   // 如果没有选中的会话，先创建一个新会话
+    //   let conversationId = selectedSession;
 
-      if (!conversationId) {
-        // 创建新会话
-        const createConvResponse = await request.post(
-          '/v1/conversations',
-          token,
-          {
-            user: userName,
-            name: currentInput.length > 20 ? currentInput.substring(0, 20) + '...' : currentInput
-          }
-        );
+    //   if (!conversationId) {
+    //     // 创建一个空的机器人回复消息，用于流式显示
+    //     const botMessageId = `bot-${Date.now()}`;
 
-        if (createConvResponse.data.data) {
-          conversationId = createConvResponse.data.data.id;
-          const newConv = {
-            id: conversationId,
-            title: createConvResponse.data.data.name || '新对话',
-            lastMessage: currentInput,
-            timestamp: Date.now()
-          };
+    //     const botMessage: Message = {
+    //       id: botMessageId,
+    //       type: 'bot',
+    //       content: '正在思考...',
+    //       timestamp: Date.now(),
+    //       isStreaming: true
+    //     };
 
-          setSessions(prev => [newConv, ...prev]);
-          setSelectedSession(conversationId);
-        } else {
-          message.error('创建会话失败');
-          return;
-        }
-      }
+    //     // 添加空的机器人消息到消息列表
+    //     setMessages(prev => [...prev, botMessage]);
+    //     setIsStreaming(true);
+    //     const requestDataBlocking = {
+    //       inputs: {},
+    //       query: currentInput,
+    //       response_mode: "blocking",
+    //       conversation_id: "",
+    //       user: userName
+    //     };
+    //     // 创建新会话
+    //     const createConvResponse = await request.post(
+    //       '/v1/chat-messages',
+    //       token,
+    //       requestDataBlocking
+    //     );
 
-      // 创建一个空的机器人回复消息，用于流式显示
-      const botMessageId = `bot-${Date.now()}`;
+    //     if (createConvResponse.data.answer) {
+    //       conversationId = createConvResponse.data.conversation_id;
+    //       const newConv = {
+    //         id: conversationId,
+    //         title: '新对话',
+    //         lastMessage: currentInput,
+    //         timestamp: Date.now()
+    //       };
 
-      const botMessage: Message = {
-        id: botMessageId,
-        type: 'bot',
-        content: '正在思考...',
-        timestamp: Date.now(),
-        isStreaming: true
-      };
+    //       setSessions(prev => [newConv, ...prev]);
+    //       setSelectedSession(conversationId);
+    //     } else {
+    //       message.error('创建会话失败');
+    //     }
+    //     setIsStreaming(false);
+    //     return;
+    //   }
 
-      // 添加空的机器人消息到消息列表
-      setMessages(prev => [...prev, botMessage]);
-      setIsStreaming(true);
+    //   // 创建一个空的机器人回复消息，用于流式显示
+    //   const botMessageId = `bot-${Date.now()}`;
 
-      // 准备文件数组
-      const files = [];
-      if (currentImageUrl) {
-        files.push({
-          type: "image",
-          transfer_method: "remote_url",
-          url: currentImageUrl
-        });
-      }
+    //   const botMessage: Message = {
+    //     id: botMessageId,
+    //     type: 'bot',
+    //     content: '正在思考...',
+    //     timestamp: Date.now(),
+    //     isStreaming: true
+    //   };
 
-      // 调用流式API
-      // try {
-      //   console.log('开始流式请求');
+    //   // 添加空的机器人消息到消息列表
+    //   setMessages(prev => [...prev, botMessage]);
+    //   setIsStreaming(true);
 
-      //   // 准备请求数据
-      //   const requestData = {
-      //     inputs: {},
-      //     query: currentInput,
-      //     response_mode: "streaming",
-      //     conversation_id: conversationId || "",
-      //     user: userName,
-      //     files: files
-      //   };
+    //   // 准备文件数组
+    //   const files = [];
+    //   if (currentImageUrl) {
+    //     files.push({
+    //       type: "image",
+    //       transfer_method: "remote_url",
+    //       url: currentImageUrl
+    //     });
+    //   }
 
-      //   // 使用simpleHttp中的stream方法
-      //   await request.stream(
-      //     '/v1/chat-messages',
-      //     token,
-      //     requestData,
-      //     (jsonData) => {
-      //       // 处理每个数据块
-      //       console.log('收到数据块:', jsonData);
+    //   // 调用流式API
+    //   // try {
+    //   //   console.log('开始流式请求');
 
-      //       if (jsonData.event === 'message' && jsonData.answer !== undefined) {
-      //         // 更新内容
-      //         const streamContent = jsonData.answer;
-      //         console.log('更新消息内容:', streamContent);
+    //   //   // 准备请求数据
+    //   //   const requestData = {
+    //   //     inputs: {},
+    //   //     query: currentInput,
+    //   //     response_mode: "streaming",
+    //   //     conversation_id: conversationId || "",
+    //   //     user: userName,
+    //   //     files: files
+    //   //   };
 
-      //         // 更新消息
-      //         setMessages(prev => {
-      //           const updatedMessages = [...prev];
-      //           const botMessageIndex = updatedMessages.findIndex(msg => msg.id === botMessageId);
+    //   //   // 使用simpleHttp中的stream方法
+    //   //   await request.stream(
+    //   //     '/v1/chat-messages',
+    //   //     token,
+    //   //     requestData,
+    //   //     (jsonData) => {
+    //   //       // 处理每个数据块
+    //   //       console.log('收到数据块:', jsonData);
 
-      //           if (botMessageIndex !== -1) {
-      //             updatedMessages[botMessageIndex].content += streamContent;
-      //           }
+    //   //       if (jsonData.event === 'message' && jsonData.answer !== undefined) {
+    //   //         // 更新内容
+    //   //         const streamContent = jsonData.answer;
+    //   //         console.log('更新消息内容:', streamContent);
 
-      //           return updatedMessages;
-      //         });
-      //       } else if (jsonData.event === 'message_end') {
-      //         console.log('收到消息结束事件');
-      //       }
-      //     },
-      //     // 完成回调
-      //     () => {
-      //       console.log('流式传输完成');
-      //       setIsStreaming(false);
+    //   //         // 更新消息
+    //   //         setMessages(prev => {
+    //   //           const updatedMessages = [...prev];
+    //   //           const botMessageIndex = updatedMessages.findIndex(msg => msg.id === botMessageId);
 
-      //       // 更新最终状态
-      //       setMessages(prev => {
-      //         return prev.map(msg => 
-      //           msg.id === botMessageId
-      //             ? { ...msg, isStreaming: false }
-      //             : msg
-      //         );
-      //       });
-      //     },
-      //     // 错误回调
-      //     (error) => {
-      //       console.error('流式请求错误:', error);
-      //       setIsStreaming(false);
+    //   //           if (botMessageIndex !== -1) {
+    //   //             updatedMessages[botMessageIndex].content += streamContent;
+    //   //           }
 
-      //       // 更新错误状态
-      //       setMessages(prev =>
-      //         prev.map(msg =>
-      //           msg.id === botMessageId
-      //             ? { ...msg, content: '获取回复失败，请重试', isStreaming: false }
-      //             : msg
-      //         )
-      //       );
+    //   //           return updatedMessages;
+    //   //         });
+    //   //       } else if (jsonData.event === 'message_end') {
+    //   //         console.log('收到消息结束事件');
+    //   //       }
+    //   //     },
+    //   //     // 完成回调
+    //   //     () => {
+    //   //       console.log('流式传输完成');
+    //   //       setIsStreaming(false);
 
-      //       message.error('获取回复失败');
-      //     }
-      //   );
-      // } catch (error) {
-      //   setIsStreaming(false);
-      //   message.error('获取回复失败');
-      //   console.error('Error streaming response:', error);
+    //   //       // 更新最终状态
+    //   //       setMessages(prev => {
+    //   //         return prev.map(msg => 
+    //   //           msg.id === botMessageId
+    //   //             ? { ...msg, isStreaming: false }
+    //   //             : msg
+    //   //         );
+    //   //       });
+    //   //     },
+    //   //     // 错误回调
+    //   //     (error) => {
+    //   //       console.error('流式请求错误:', error);
+    //   //       setIsStreaming(false);
 
-      //   // 移除空的机器人消息或标记为错误
-      //   setMessages(prev =>
-      //     prev.map(msg =>
-      //       msg.id === botMessageId
-      //         ? { ...msg, content: '获取回复失败，请重试', isStreaming: false }
-      //         : msg
-      //     )
-      //   );
-      // }
+    //   //       // 更新错误状态
+    //   //       setMessages(prev =>
+    //   //         prev.map(msg =>
+    //   //           msg.id === botMessageId
+    //   //             ? { ...msg, content: '获取回复失败，请重试', isStreaming: false }
+    //   //             : msg
+    //   //         )
+    //   //       );
 
-      const requestDataBlocking = {
-        inputs: {},
-        query: currentInput,
-        response_mode: "blocking",
-        conversation_id: conversationId || "",
-        user: userName,
-        files: files
-      };
+    //   //       message.error('获取回复失败');
+    //   //     }
+    //   //   );
+    //   // } catch (error) {
+    //   //   setIsStreaming(false);
+    //   //   message.error('获取回复失败');
+    //   //   console.error('Error streaming response:', error);
 
-      // 使用simpleHttp中的stream方法
-      const responseBlocking = await request.post('/v1/chat-messages', token, requestDataBlocking);
-      if(responseBlocking.data.answer){
-        setMessages(prev =>
-          prev.map(msg =>
-            msg.id === botMessageId
-              ? { ...msg, content: responseBlocking.data.answer, isStreaming: false }
-              : msg
-          )
-        );
-      }
-      // for(let i = 0; i < 9; i++) {
-      //   setMessages(prev =>
-      //     prev.map(msg =>
-      //       msg.id === botMessageId
-      //         ? { ...msg, content: msg.content+(i+1), isStreaming: false }
-      //         : msg
-      //     )
-      //   );
-      // }
+    //   //   // 移除空的机器人消息或标记为错误
+    //   //   setMessages(prev =>
+    //   //     prev.map(msg =>
+    //   //       msg.id === botMessageId
+    //   //         ? { ...msg, content: '获取回复失败，请重试', isStreaming: false }
+    //   //         : msg
+    //   //     )
+    //   //   );
+    //   // }
 
-    } catch (error) {
-      message.error('发送消息失败');
-      console.error('Error sending message:', error);
-    }
+    //   const requestDataBlocking = {
+    //     inputs: {},
+    //     query: currentInput,
+    //     response_mode: "blocking",
+    //     conversation_id: conversationId || "",
+    //     user: userName,
+    //     files: files
+    //   };
+
+    //   // 使用simpleHttp中的stream方法
+    //   const responseBlocking = await request.post('/v1/chat-messages', token, requestDataBlocking);
+    //   if (responseBlocking.data.answer) {
+    //     setMessages(prev =>
+    //       prev.map(msg =>
+    //         msg.id === botMessageId
+    //           ? { ...msg, content: responseBlocking.data.answer, isStreaming: false }
+    //           : msg
+    //       )
+    //     );
+    //     setIsStreaming(false);
+    //   }
+    //   // for(let i = 0; i < 9; i++) {
+    //   //   setMessages(prev =>
+    //   //     prev.map(msg =>
+    //   //       msg.id === botMessageId
+    //   //         ? { ...msg, content: msg.content+(i+1), isStreaming: false }
+    //   //         : msg
+    //   //     )
+    //   //   );
+    //   // }
+
+    // } catch (error) {
+    //   message.error('发送消息失败');
+    //   console.error('Error sending message:', error);
+    // }
   };
 
   const handleNewChat = () => {
     setSelectedSession(null);
     setMessages([]);
+    setInputValue('');
   };
 
   const formatTime = (timestamp: number) => {
@@ -519,10 +549,46 @@ export default function ChatbotPage() {
               </div>
             </>
           ) : (
-            <Empty
-              description="请选择一个会话或创建新的会话"
-              className={styles.emptyState}
-            />
+            <>
+              <div className={styles.messageList}>
+                <div className={styles.emptyMessages}>
+                  <Empty description="新建对话" />
+                </div>
+                <div ref={messagesEndRef} />
+              </div>
+              <div className={styles.inputArea}>
+                <div className={styles.inputWrapper}>
+                  <Input.TextArea
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder="输入消息开始新对话..."
+                    autoSize={{ minRows: 1, maxRows: 4 }}
+                    onPressEnter={(e) => {
+                      if (!e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                  />
+                  <div className={styles.inputActions}>
+                    <Input
+                      placeholder="输入图片URL"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      style={{ width: '200px', marginRight: '10px' }}
+                    />
+                    <Button
+                      type="primary"
+                      onClick={handleSendMessage}
+                      loading={isStreaming}
+                      disabled={isStreaming}
+                    >
+                      发送
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </>
           )}
         </Content>
       </Layout>
