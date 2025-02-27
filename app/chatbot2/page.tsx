@@ -16,6 +16,7 @@ interface Message {
   type: 'user' | 'bot';
   content: string;
   timestamp: number;
+  isStreaming?: boolean;
 }
 
 interface ChatSession {
@@ -32,6 +33,8 @@ export default function ChatbotPage() {
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [imageUrl, setImageUrl] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // 获取会话列表
@@ -91,14 +94,14 @@ export default function ChatbotPage() {
       
       if (response.data.data) {
         const messageList1 = response.data.data.map((msg: any) => ({
-          id: msg.id,
+          id: 'user-'+msg.id,
           type: 'user',
           content: msg.query,
           timestamp: new Date(msg.created_at).getTime()
         }));
         // 将API返回的消息格式转换为应用中使用的格式
         const messageList2 = response.data.data.map((msg: any) => ({
-          id: msg.id,
+          id: 'bot-'+msg.id,
           type: 'bot',
           content: msg.answer,
           timestamp: new Date(msg.created_at).getTime()
@@ -135,7 +138,7 @@ export default function ChatbotPage() {
     const newMessage: Message = {
       id: Date.now().toString(),
       type: 'user',
-      content: inputValue,
+      content: inputValue + (imageUrl ? ' [包含图片]' : ''),
       timestamp: Date.now()
     };
 
@@ -143,6 +146,8 @@ export default function ChatbotPage() {
     setMessages(prev => [...prev, newMessage]);
     const currentInput = inputValue;
     setInputValue('');
+    const currentImageUrl = imageUrl;
+    setImageUrl(''); // 清空图片URL
 
     try {
       const userName = getUserName();
@@ -179,21 +184,119 @@ export default function ChatbotPage() {
         }
       }
       
-      // 发送消息
-      await request.post(
-        '/v1/messages', 
-        token, 
-        {
-          conversation_id: conversationId,
-          content: currentInput,
-          role: 'user',
-          user: userName
-        }
-      );
+      // 创建一个空的机器人回复消息，用于流式显示
+      const botMessageId = `bot-${Date.now()}`;
       
-      // 刷新消息列表
-      fetchMessages(conversationId);
-      
+      const botMessage: Message = {
+        id: botMessageId,
+        type: 'bot',
+        content: '正在思考...',
+        timestamp: Date.now(),
+        isStreaming: true
+      };
+
+      // 添加空的机器人消息到消息列表
+      setMessages(prev => [...prev, botMessage]);
+      setIsStreaming(true);
+
+      // 准备文件数组
+      const files = [];
+      if (currentImageUrl) {
+        files.push({
+          type: "image",
+          transfer_method: "remote_url",
+          url: currentImageUrl
+        });
+      }
+
+      // 调用流式API
+      try {
+        console.log('开始流式请求');
+        
+        // 准备请求数据
+        const requestData = {
+          inputs: {},
+          query: currentInput,
+          response_mode: "streaming",
+          conversation_id: conversationId || "",
+          user: userName,
+          files: files
+        };
+        
+        // 使用simpleHttp中的stream方法
+        await request.stream(
+          '/v1/chat-messages',
+          token,
+          requestData,
+          (jsonData) => {
+            // 处理每个数据块
+            console.log('收到数据块:', jsonData);
+            
+            if (jsonData.event === 'message' && jsonData.answer !== undefined) {
+              // 更新内容
+              const streamContent = jsonData.answer;
+              console.log('更新消息内容:', streamContent);
+              
+              // 更新消息
+              setMessages(prev => {
+                const updatedMessages = [...prev];
+                const botMessageIndex = updatedMessages.findIndex(msg => msg.id === botMessageId);
+                
+                if (botMessageIndex !== -1) {
+                  updatedMessages[botMessageIndex].content += streamContent;
+                }
+                
+                return updatedMessages;
+              });
+            } else if (jsonData.event === 'message_end') {
+              console.log('收到消息结束事件');
+            }
+          },
+          // 完成回调
+          () => {
+            console.log('流式传输完成');
+            setIsStreaming(false);
+            
+            // 更新最终状态
+            setMessages(prev => {
+              return prev.map(msg => 
+                msg.id === botMessageId
+                  ? { ...msg, isStreaming: false }
+                  : msg
+              );
+            });
+          },
+          // 错误回调
+          (error) => {
+            console.error('流式请求错误:', error);
+            setIsStreaming(false);
+            
+            // 更新错误状态
+            setMessages(prev =>
+              prev.map(msg =>
+                msg.id === botMessageId
+                  ? { ...msg, content: '获取回复失败，请重试', isStreaming: false }
+                  : msg
+              )
+            );
+            
+            message.error('获取回复失败');
+          }
+        );
+      } catch (error) {
+        setIsStreaming(false);
+        message.error('获取回复失败');
+        console.error('Error streaming response:', error);
+
+        // 移除空的机器人消息或标记为错误
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === botMessageId
+              ? { ...msg, content: '获取回复失败，请重试', isStreaming: false }
+              : msg
+          )
+        );
+      }
     } catch (error) {
       message.error('发送消息失败');
       console.error('Error sending message:', error);
@@ -332,7 +435,10 @@ export default function ChatbotPage() {
                             AI
                           </Avatar>
                           <div className={styles.messageContent}>
-                            <div className={styles.messageText}>{msg.content}</div>
+                            <div className={styles.messageText}>
+                              {msg.content}
+                              {msg.isStreaming && <span className={styles.cursorBlink}>|</span>}
+                            </div>
                             <div className={styles.messageTime}>
                               {formatTime(msg.timestamp)}
                             </div>
@@ -349,45 +455,36 @@ export default function ChatbotPage() {
                 <div ref={messagesEndRef} />
               </div>
               <div className={styles.inputArea}>
-                <Upload
-                  className={styles.upload}
-                  showUploadList={false}
-                  beforeUpload={(file) => {
-                    // 将文件名添加到输入框
-                    setInputValue(prev => {
-                      const prefix = prev.trim() ? prev.trim() + ' ' : '';
-                      return prefix + `[文件: ${file.name}]`;
-                    });
-                    // 返回 false 阻止自动上传
-                    return false;
-                  }}
-                >
-                  <Button 
-                    type="text" 
-                    icon={<PaperClipOutlined />}
-                    className={styles.uploadButton}
+                <div className={styles.inputWrapper}>
+                  <Input.TextArea
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder="输入消息..."
+                    autoSize={{ minRows: 1, maxRows: 4 }}
+                    onPressEnter={(e) => {
+                      if (!e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
                   />
-                </Upload>
-                <Input.TextArea
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                  placeholder="输入消息，按Enter发送，Shift+Enter换行"
-                  autoSize={{ minRows: 1, maxRows: 4 }}
-                />
-                <Button
-                  type="primary"
-                  icon={<SendOutlined />}
-                  onClick={handleSendMessage}
-                  className={styles.sendButton}
-                >
-                  发送
-                </Button>
+                  <div className={styles.inputActions}>
+                    <Input 
+                      placeholder="输入图片URL" 
+                      value={imageUrl} 
+                      onChange={(e) => setImageUrl(e.target.value)} 
+                      style={{ width: '200px', marginRight: '10px' }}
+                    />
+                    <Button 
+                      type="primary" 
+                      onClick={handleSendMessage}
+                      loading={isStreaming}
+                      disabled={isStreaming}
+                    >
+                      发送
+                    </Button>
+                  </div>
+                </div>
               </div>
             </>
           ) : (

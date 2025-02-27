@@ -214,6 +214,20 @@
   gap: 8px;
 }
 
+.inputWrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 10px;
+}
+
+.inputActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
 .input {
   flex: 1;
 }
@@ -245,4 +259,20 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+}
+
+.cursorBlink {
+  display: inline-block;
+  margin-left: 2px;
+  animation: blink 1s step-end infinite;
+  font-weight: normal;
+}
+
+@keyframes blink {
+  from, to {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
 }
