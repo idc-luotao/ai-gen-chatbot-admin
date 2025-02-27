@@ -44,7 +44,7 @@ export default function ChatbotPage() {
 
   // 当选择会话变化时，加载对应的消息
   useEffect(() => {
-    if (selectedSession) {
+    if (selectedSession&&selectedSession!=='empty') {
       fetchMessages(selectedSession);
     } else {
       setMessages([]);
@@ -134,7 +134,6 @@ export default function ChatbotPage() {
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
-
     const newMessage: Message = {
       id: Date.now().toString(),
       type: 'user',
@@ -155,33 +154,8 @@ export default function ChatbotPage() {
 
       // 如果没有选中的会话，先创建一个新会话
       let conversationId = selectedSession;
-
-      if (!conversationId) {
-        // 创建新会话
-        const createConvResponse = await request.post(
-          '/v1/conversations',
-          token,
-          {
-            user: userName,
-            name: currentInput.length > 20 ? currentInput.substring(0, 20) + '...' : currentInput
-          }
-        );
-
-        if (createConvResponse.data.data) {
-          conversationId = createConvResponse.data.data.id;
-          const newConv = {
-            id: conversationId,
-            title: createConvResponse.data.data.name || '新对话',
-            lastMessage: currentInput,
-            timestamp: Date.now()
-          };
-
-          setSessions(prev => [newConv, ...prev]);
-          setSelectedSession(conversationId);
-        } else {
-          message.error('创建会话失败');
-          return;
-        }
+      if(conversationId==='empty'){
+          conversationId = '';
       }
 
       // 创建一个空的机器人回复消息，用于流式显示
@@ -335,7 +309,7 @@ export default function ChatbotPage() {
   };
 
   const handleNewChat = () => {
-    setSelectedSession(null);
+    setSelectedSession('empty');
     setMessages([]);
   };
 
