@@ -247,6 +247,31 @@
   box-shadow: none;
 }
 
+.fileInfoInput {
+  flex: 1;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin: 0 8px;
+  font-size: 13px;
+  color: #333;
+  border-left: 3px solid #1677ff;
+}
+
+.fileName, .fileId {
+  margin: 4px 0;
+}
+
+.fileInfo {
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin: 8px 0;
+  font-size: 13px;
+  color: #333;
+  border-left: 3px solid #1677ff;
+}
+
 .upload {
   margin-bottom: 2px;
 }

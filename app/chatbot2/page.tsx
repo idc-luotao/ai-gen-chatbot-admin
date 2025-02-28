@@ -17,6 +17,10 @@ interface Message {
   content: string;
   timestamp: number;
   isStreaming?: boolean;
+  fileInfo?: {
+    fileName: string;
+    fileId: string;
+  };
 }
 
 interface ChatSession {
@@ -35,6 +39,7 @@ export default function ChatbotPage() {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
+  const [uploadedFile, setUploadedFile] = useState<{fileName: string, fileId: string} | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // 获取会话列表
@@ -133,12 +138,15 @@ export default function ChatbotPage() {
   }, [messages]);
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim()) return;
+    // 如果没有输入内容且没有上传文件，则不发送
+    if (!inputValue.trim() && !uploadedFile) return;
+    
     const newMessage: Message = {
       id: Date.now().toString(),
       type: 'user',
-      content: inputValue + (imageUrl ? ' [包含图片]' : ''),
-      timestamp: Date.now()
+      content: uploadedFile ? '' : inputValue,
+      timestamp: Date.now(),
+      fileInfo: uploadedFile || undefined
     };
 
     // 先在界面上显示用户消息
@@ -147,7 +155,11 @@ export default function ChatbotPage() {
     setInputValue('');
     const currentImageUrl = imageUrl;
     setImageUrl(''); // 清空图片URL
-
+    
+    // 清空上传的文件信息
+    const currentUploadedFile = uploadedFile;
+    setUploadedFile(null);
+    
     try {
       const userName = getUserName();
       const token = API_TOKEN; // 从配置文件获取 token
@@ -175,11 +187,11 @@ export default function ChatbotPage() {
 
       // 准备文件数组
       const files = [];
-      if (currentImageUrl) {
+      if (currentUploadedFile) {
         files.push({
-          type: "image",
+          type: "file",
           transfer_method: "remote_url",
-          url: currentImageUrl
+          url: currentUploadedFile.fileId
         });
       }
 
@@ -275,37 +287,6 @@ export default function ChatbotPage() {
           )
         );
       }
-
-      // const requestDataBlocking = {
-      //   inputs: {},
-      //   query: currentInput,
-      //   response_mode: "blocking",
-      //   conversation_id: conversationId || "",
-      //   user: userName,
-      //   files: files
-      // };
-
-      // // 使用simpleHttp中的stream方法
-      // const responseBlocking = await request.post('/v1/chat-messages', token, requestDataBlocking);
-      // if(responseBlocking.data.answer){
-      //   setMessages(prev =>
-      //     prev.map(msg =>
-      //       msg.id === botMessageId
-      //         ? { ...msg, content: responseBlocking.data.answer, isStreaming: false }
-      //         : msg
-      //     )
-      //   );
-      //   setIsStreaming(false);
-      // }
-      // for(let i = 0; i < 9; i++) {
-      //   setMessages(prev =>
-      //     prev.map(msg =>
-      //       msg.id === botMessageId
-      //         ? { ...msg, content: msg.content+(i+1), isStreaming: false }
-      //         : msg
-      //     )
-      //   );
-      // }
     } catch (error) {
       message.error('发送消息失败');
       console.error('Error sending message:', error);
@@ -430,6 +411,12 @@ export default function ChatbotPage() {
                           </Avatar>
                           <div className={styles.messageContent}>
                             <div className={styles.messageText}>{msg.content}</div>
+                            {msg.fileInfo && (
+                              <div className={styles.fileInfo}>
+                                <div className={styles.fileName}>文件名: {msg.fileInfo.fileName}</div>
+                                <div className={styles.fileId}>文件ID: {msg.fileInfo.fileId}</div>
+                              </div>
+                            )}
                             <div className={styles.messageTime}>
                               {formatTime(msg.timestamp)}
                             </div>
@@ -469,31 +456,57 @@ export default function ChatbotPage() {
                     <Upload
                       showUploadList={false}
                       beforeUpload={(file) => {
-                        // 处理文件上传逻辑
-                        message.success(`${file.name} 已选择`);
-                        setImageUrl(file.name);
-                        return false; // 阻止自动上传
+                        // 生成随机文件ID
+                        const fileId = `file-${Math.random().toString(36).substring(2, 10)}`;
+                        
+                        // 设置上传的文件信息
+                        setUploadedFile({
+                          fileName: file.name,
+                          fileId: fileId
+                        });
+                        
+                        // 显示成功消息
+                        message.success(`${file.name} 已上传，文件ID: ${fileId}`);
+                        
+                        // 阻止自动上传
+                        return false;
                       }}
                     >
                       <Button 
                         icon={<PaperClipOutlined />} 
                         type="text"
-                        title="上传图片"
+                        title="上传文件"
+                        disabled={!!uploadedFile}
                       />
                     </Upload>
+                    {uploadedFile && (
+                      <Button
+                        type="text"
+                        icon={<DeleteOutlined />}
+                        title="取消上传"
+                        onClick={() => setUploadedFile(null)}
+                      />
+                    )}
                   </div>
-                  <Input.TextArea
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    placeholder="输入消息..."
-                    autoSize={{ minRows: 1, maxRows: 4 }}
-                    onPressEnter={(e) => {
-                      if (!e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                  />
+                  {uploadedFile ? (
+                    <div className={styles.fileInfoInput}>
+                      <div className={styles.fileName}>文件名: {uploadedFile.fileName}</div>
+                      <div className={styles.fileId}>文件ID: {uploadedFile.fileId}</div>
+                    </div>
+                  ) : (
+                    <Input.TextArea
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      placeholder="输入消息..."
+                      autoSize={{ minRows: 1, maxRows: 4 }}
+                      onPressEnter={(e) => {
+                        if (!e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
+                    />
+                  )}
                   <div className={styles.sendButton}>
                     <Button
                       type="primary"
@@ -522,31 +535,57 @@ export default function ChatbotPage() {
                     <Upload
                       showUploadList={false}
                       beforeUpload={(file) => {
-                        // 处理文件上传逻辑
-                        message.success(`${file.name} 已选择`);
-                        setImageUrl(file.name);
-                        return false; // 阻止自动上传
+                        // 生成随机文件ID
+                        const fileId = `file-${Math.random().toString(36).substring(2, 10)}`;
+                        
+                        // 设置上传的文件信息
+                        setUploadedFile({
+                          fileName: file.name,
+                          fileId: fileId
+                        });
+                        
+                        // 显示成功消息
+                        message.success(`${file.name} 已上传，文件ID: ${fileId}`);
+                        
+                        // 阻止自动上传
+                        return false;
                       }}
                     >
                       <Button 
                         icon={<PaperClipOutlined />} 
                         type="text"
-                        title="上传图片"
+                        title="上传文件"
+                        disabled={!!uploadedFile}
                       />
                     </Upload>
+                    {uploadedFile && (
+                      <Button
+                        type="text"
+                        icon={<DeleteOutlined />}
+                        title="取消上传"
+                        onClick={() => setUploadedFile(null)}
+                      />
+                    )}
                   </div>
-                  <Input.TextArea
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    placeholder="输入消息开始新对话..."
-                    autoSize={{ minRows: 1, maxRows: 4 }}
-                    onPressEnter={(e) => {
-                      if (!e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                  />
+                  {uploadedFile ? (
+                    <div className={styles.fileInfoInput}>
+                      <div className={styles.fileName}>文件名: {uploadedFile.fileName}</div>
+                      <div className={styles.fileId}>文件ID: {uploadedFile.fileId}</div>
+                    </div>
+                  ) : (
+                    <Input.TextArea
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      placeholder="输入消息开始新对话..."
+                      autoSize={{ minRows: 1, maxRows: 4 }}
+                      onPressEnter={(e) => {
+                        if (!e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
+                    />
+                  )}
                   <div className={styles.sendButton}>
                     <Button
                       type="primary"
