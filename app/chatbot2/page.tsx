@@ -465,6 +465,23 @@ export default function ChatbotPage() {
               </div>
               <div className={styles.inputArea}>
                 <div className={styles.inputWrapper}>
+                  <div className={styles.inputActions}>
+                    <Upload
+                      showUploadList={false}
+                      beforeUpload={(file) => {
+                        // 处理文件上传逻辑
+                        message.success(`${file.name} 已选择`);
+                        setImageUrl(file.name);
+                        return false; // 阻止自动上传
+                      }}
+                    >
+                      <Button 
+                        icon={<PaperClipOutlined />} 
+                        type="text"
+                        title="上传图片"
+                      />
+                    </Upload>
+                  </div>
                   <Input.TextArea
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
@@ -477,18 +494,13 @@ export default function ChatbotPage() {
                       }
                     }}
                   />
-                  <div className={styles.inputActions}>
-                    <Input
-                      placeholder="输入图片URL"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      style={{ width: '200px', marginRight: '10px' }}
-                    />
+                  <div className={styles.sendButton}>
                     <Button
                       type="primary"
                       onClick={handleSendMessage}
                       loading={isStreaming}
                       disabled={isStreaming}
+                      icon={<SendOutlined />}
                     >
                       发送
                     </Button>
@@ -497,10 +509,58 @@ export default function ChatbotPage() {
               </div>
             </>
           ) : (
-            <Empty
-              description="请选择一个会话或创建新的会话"
-              className={styles.emptyState}
-            />
+            <>
+              <div className={styles.messageList}>
+                <div className={styles.emptyMessages}>
+                  <Empty description="新建对话" />
+                </div>
+                <div ref={messagesEndRef} />
+              </div>
+              <div className={styles.inputArea}>
+                <div className={styles.inputWrapper}>
+                  <div className={styles.inputActions}>
+                    <Upload
+                      showUploadList={false}
+                      beforeUpload={(file) => {
+                        // 处理文件上传逻辑
+                        message.success(`${file.name} 已选择`);
+                        setImageUrl(file.name);
+                        return false; // 阻止自动上传
+                      }}
+                    >
+                      <Button 
+                        icon={<PaperClipOutlined />} 
+                        type="text"
+                        title="上传图片"
+                      />
+                    </Upload>
+                  </div>
+                  <Input.TextArea
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder="输入消息开始新对话..."
+                    autoSize={{ minRows: 1, maxRows: 4 }}
+                    onPressEnter={(e) => {
+                      if (!e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                  />
+                  <div className={styles.sendButton}>
+                    <Button
+                      type="primary"
+                      onClick={handleSendMessage}
+                      loading={isStreaming}
+                      disabled={isStreaming}
+                      icon={<SendOutlined />}
+                    >
+                      发送
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </>
           )}
         </Content>
       </Layout>
