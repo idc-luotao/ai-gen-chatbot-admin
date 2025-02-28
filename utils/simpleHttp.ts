@@ -34,6 +34,13 @@ interface RequestMethods {
     onComplete?: () => void,
     onError?: (error: any) => void
   ) => Promise<void>;
+  uploadFile: (
+    url: string,
+    token: string,
+    file: File,
+    user: string,
+    onProgress?: (percent: number) => void
+  ) => Promise<any>;
 }
 
 const request: RequestMethods = {
@@ -64,6 +71,27 @@ const request: RequestMethods = {
       Authorization: `Bearer ${token}`
     };
     return http.delete(url, { data, ...config })
+  },
+  uploadFile: async (url, token, file, user, onProgress) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('user', user);
+
+    const config: AxiosRequestConfig = {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${token}`
+      }
+    };
+
+    if (onProgress) {
+      config.onUploadProgress = (progressEvent) => {
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total!);
+        onProgress(percentCompleted);
+      };
+    }
+
+    return http.post(url, formData, config);
   },
   stream: async (url, token, data, onChunk, onComplete, onError) => {
     try {

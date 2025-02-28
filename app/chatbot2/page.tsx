@@ -187,11 +187,21 @@ export default function ChatbotPage() {
 
       // 准备文件数组
       const files = [];
+      if (currentImageUrl) {
+        files.push({
+          type: "image",
+          transfer_method: "remote_url",
+          url: currentImageUrl
+        });
+      }
+      
+      // 如果有上传的文件，添加到请求中
       if (currentUploadedFile) {
         files.push({
           type: "file",
-          transfer_method: "remote_url",
-          url: currentUploadedFile.fileId
+          transfer_method: "file_id",
+          file_id: currentUploadedFile.fileId,
+          file_name: currentUploadedFile.fileName
         });
       }
 
@@ -202,7 +212,7 @@ export default function ChatbotPage() {
         // 准备请求数据
         const requestData = {
           inputs: {},
-          query: currentInput,
+          query: currentUploadedFile ? `[文件上传] ${currentUploadedFile.fileName}` : currentInput,
           response_mode: "streaming",
           conversation_id: conversationId || "",
           user: userName,
@@ -455,20 +465,48 @@ export default function ChatbotPage() {
                   <div className={styles.inputActions}>
                     <Upload
                       showUploadList={false}
-                      beforeUpload={(file) => {
-                        // 生成随机文件ID
-                        const fileId = `file-${Math.random().toString(36).substring(2, 10)}`;
+                      beforeUpload={async (file) => {
+                        try {
+                          // 显示上传中提示
+                          const uploadingKey = `uploading-${Date.now()}`;
+                          message.loading({ content: `正在上传文件: ${file.name}...`, key: uploadingKey });
+                          
+                          // 使用simpleHttp的uploadFile方法上传文件
+                          const token = API_TOKEN;
+                          const userName = getUserName();
+                          const response = await request.uploadFile(
+                            '/v1/files/upload',
+                            token,
+                            file,
+                            userName,
+                            (percent) => {
+                              message.loading({ 
+                                content: `正在上传文件: ${file.name}... ${percent}%`, 
+                                key: uploadingKey 
+                              });
+                            }
+                          );
+                          
+                          // 解析响应
+                          const data = response.data;
+                          
+                          // 设置上传的文件信息
+                          setUploadedFile({
+                            fileName: data.name,
+                            fileId: data.id
+                          });
+                          
+                          // 显示成功消息
+                          message.success({ 
+                            content: `${file.name} 上传成功，文件ID: ${data.id}`, 
+                            key: uploadingKey 
+                          });
+                        } catch (error) {
+                          console.error('文件上传失败:', error);
+                          message.error(`文件上传失败: ${error.message}`);
+                        }
                         
-                        // 设置上传的文件信息
-                        setUploadedFile({
-                          fileName: file.name,
-                          fileId: fileId
-                        });
-                        
-                        // 显示成功消息
-                        message.success(`${file.name} 已上传，文件ID: ${fileId}`);
-                        
-                        // 阻止自动上传
+                        // 阻止默认上传行为
                         return false;
                       }}
                     >
@@ -534,20 +572,48 @@ export default function ChatbotPage() {
                   <div className={styles.inputActions}>
                     <Upload
                       showUploadList={false}
-                      beforeUpload={(file) => {
-                        // 生成随机文件ID
-                        const fileId = `file-${Math.random().toString(36).substring(2, 10)}`;
+                      beforeUpload={async (file) => {
+                        try {
+                          // 显示上传中提示
+                          const uploadingKey = `uploading-${Date.now()}`;
+                          message.loading({ content: `正在上传文件: ${file.name}...`, key: uploadingKey });
+                          
+                          // 使用simpleHttp的uploadFile方法上传文件
+                          const token = API_TOKEN;
+                          const userName = getUserName();
+                          const response = await request.uploadFile(
+                            '/v1/files/upload',
+                            token,
+                            file,
+                            userName,
+                            (percent) => {
+                              message.loading({ 
+                                content: `正在上传文件: ${file.name}... ${percent}%`, 
+                                key: uploadingKey 
+                              });
+                            }
+                          );
+                          
+                          // 解析响应
+                          const data = response.data;
+                          
+                          // 设置上传的文件信息
+                          setUploadedFile({
+                            fileName: data.name,
+                            fileId: data.id
+                          });
+                          
+                          // 显示成功消息
+                          message.success({ 
+                            content: `${file.name} 上传成功，文件ID: ${data.id}`, 
+                            key: uploadingKey 
+                          });
+                        } catch (error) {
+                          console.error('文件上传失败:', error);
+                          message.error(`文件上传失败: ${error.message}`);
+                        }
                         
-                        // 设置上传的文件信息
-                        setUploadedFile({
-                          fileName: file.name,
-                          fileId: fileId
-                        });
-                        
-                        // 显示成功消息
-                        message.success(`${file.name} 已上传，文件ID: ${fileId}`);
-                        
-                        // 阻止自动上传
+                        // 阻止默认上传行为
                         return false;
                       }}
                     >
