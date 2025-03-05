@@ -32,7 +32,8 @@ interface RequestMethods {
     data: any, 
     onChunk: (chunk: any) => void, 
     onComplete?: () => void,
-    onError?: (error: any) => void
+    onError?: (error: any) => void,
+    onStart?: () => void
   ) => Promise<void>;
   uploadFile: (
     url: string,
@@ -93,10 +94,15 @@ const request: RequestMethods = {
 
     return http.post(url, formData, config);
   },
-  stream: async (url, token, data, onChunk, onComplete, onError) => {
+  stream: async (url, token, data, onChunk, onComplete, onError, onStart) => {
     try {
       console.log('开始流式请求:', url);
       console.log('请求数据:', data);
+      
+      // // 调用开始回调
+      // if (onStart) {
+      //   onStart();
+      // }
       
       // // 使用axios进行流式请求
       // const response = await axios({
@@ -132,6 +138,11 @@ const request: RequestMethods = {
       if (!fetchResponse.body) {
         throw new Error('Response body is null');
       }
+      
+      // 服务端响应已到达，准备开始读取流
+      if (onStart) {
+        onStart();
+      }
 
       const reader = fetchResponse.body.getReader();
       const decoder = new TextDecoder();
@@ -147,7 +158,7 @@ const request: RequestMethods = {
           
           // 解码新接收的数据
           const chunk = decoder.decode(value, { stream: true });
-          console.log('接收到新数据:', chunk);
+          // console.log('接收到新数据:', chunk);
           
           // 处理数据块
           const lines = chunk.split('\n');

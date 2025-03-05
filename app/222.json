@@ -1,0 +1,10 @@
+{
+  "tool": "ssflow",
+  "params": {
+    "ApplyType": "TT_WF_MERCHANDISE_PLAN",
+    "ApplyDetail": "新製品発表会",
+    "UserNo": "u11@gmail.com",
+    "FK_Flow": "001",
+    "ser": "XXX"
+  }
+}

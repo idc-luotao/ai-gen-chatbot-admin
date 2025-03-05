@@ -39,7 +39,7 @@ export default function ChatbotPage() {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
-  const [uploadedFile, setUploadedFile] = useState<{ fileName: string, fileId: string } | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<{fileName: string, fileId: string} | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // 获取会话列表
@@ -49,7 +49,7 @@ export default function ChatbotPage() {
 
   // 当选择会话变化时，加载对应的消息
   useEffect(() => {
-    if (selectedSession && selectedSession !== 'empty') {
+    if (selectedSession&&selectedSession!=='empty') {
       fetchMessages(selectedSession);
     } else {
       setMessages([]);
@@ -59,7 +59,7 @@ export default function ChatbotPage() {
   const fetchConversations = async () => {
     try {
       const userName = getUserName();
-      const token = API_TOKEN as string; // 从配置文件获取 token
+      const token = API_TOKEN; // 从配置文件获取 token
       const url = `/v1/conversations?last_id=&limit=20&user=${userName}`;
 
       setLoading(true);
@@ -140,7 +140,7 @@ export default function ChatbotPage() {
   const handleSendMessage = async () => {
     // 如果没有输入内容且没有上传文件，则不发送
     if (!inputValue.trim() && !uploadedFile) return;
-
+    
     const newMessage: Message = {
       id: Date.now().toString(),
       type: 'user',
@@ -155,19 +155,19 @@ export default function ChatbotPage() {
     setInputValue('');
     const currentImageUrl = imageUrl;
     setImageUrl(''); // 清空图片URL
-
+    
     // 清空上传的文件信息
     const currentUploadedFile = uploadedFile;
     setUploadedFile(null);
-
+    
     try {
       const userName = getUserName();
       const token = API_TOKEN; // 从配置文件获取 token
 
       // 如果没有选中的会话，先创建一个新会话
       let conversationId = selectedSession;
-      if (conversationId === 'empty') {
-        conversationId = '';
+      if(conversationId==='empty'){
+          conversationId = '';
       }
 
       // 创建一个空的机器人回复消息，用于流式显示
@@ -197,7 +197,7 @@ export default function ChatbotPage() {
           url: currentImageUrl
         });
       }
-
+      
       // 如果有上传的文件，添加到请求中
       if (currentUploadedFile) {
         files.push({
@@ -232,15 +232,10 @@ export default function ChatbotPage() {
             console.log('收到数据块:', jsonData);
 
             if (jsonData.event === 'message' && jsonData.answer !== undefined) {
-
-
-              
-
-
               // 更新内容
               const streamContent = jsonData.answer;
               console.log('更新消息内容:', streamContent);
-
+              
               // 累积完整响应
               fullResponse += streamContent;
 
@@ -248,107 +243,63 @@ export default function ChatbotPage() {
               setMessages(prev => {
                 // 查找当前机器人消息
                 const currentMessage = prev.find(msg => msg.id === botMessageId);
-
+                
                 // 如果找不到消息或消息已经包含了这个内容，则不更新
                 if (!currentMessage) return prev;
-
+                
                 // 创建新的消息列表，替换机器人消息
-                return prev.map(msg =>
+                return prev.map(msg => 
                   msg.id === botMessageId
                     ? { ...msg, content: msg.content + streamContent }
                     : msg
                 );
               });
-
-
             } else if (jsonData.event === 'message_end') {
-              console.log('收到消息结束事件，设置conversation_id');
-              conversationId = jsonData.conversation_id
-
-              setSelectedSession(prev => {
-                if (prev === conversationId) return prev;
-                return conversationId;
-              });
+              console.log('收到消息结束事件');
             }
           },
           // 完成回调
           () => {
             console.log('流式传输完成');
             setIsStreaming(false);
+            
             // 获取完整的响应消息
             console.log('完整的响应消息:', fullResponse);
+            
             // 更新最终状态
             setMessages(prev => {
-              return prev.map(msg =>
+              return prev.map(msg => 
                 msg.id === botMessageId
                   ? { ...msg, isStreaming: false }
                   : msg
               );
             });
-            const indexStart = fullResponse.indexOf('```json');
-            if (indexStart >= 0) {
-              const indexEnd = fullResponse.lastIndexOf('```');
-              const jsonString = fullResponse.substring(indexStart + 8, indexEnd-1);
-              console.log('提取的JSON字符串:', jsonString);
 
-              try {
-                // 将字符串转换为JSON对象
-                const jsonData = JSON.parse(jsonString);
-                console.log('解析后的JSON数据发送请求:', jsonData);
-
-                // 获取token
-                const token = API_TOKEN as string;
-                // 调用API
-                request.post(
-                  'http://localhost:5003/execute',
-                  '',
-                  jsonData
-                ).then((res) => {
-                  console.log('请求ARS数据返回:', res);
-                  // 准备请求数据
-                  const requestDataJon = {
-                    inputs: {},
-                    query: res,
-                    response_mode: "streaming",
-                    conversation_id: conversationId || "",
-                    user: userName,
-                    files: []
-                  };
-                  request.stream(
-                    '/v1/chat-messages',
-                    token,
-                    requestDataJon,
-                    (jsonData) => {
-                      if (jsonData.event === 'message' && jsonData.answer !== undefined) {
-                        // 更新内容
-                        const streamContent = jsonData.answer;
-                        console.log('更新消息内容2:', streamContent);
-                        // 累积完整响应
-                        fullResponse += streamContent;
-                        // 更新消息 - 使用函数式更新确保基于最新状态
-                        setMessages(prev => {
-                          // 查找当前机器人消息
-                          const currentMessage = prev.find(msg => msg.id === botMessageId);
-                          // 如果找不到消息或消息已经包含了这个内容，则不更新
-                          if (!currentMessage) return prev;
-                          // 创建新的消息列表，替换机器人消息
-                          return prev.map(msg =>
-                            msg.id === botMessageId
-                              ? { ...msg, content: msg.content + streamContent }
-                              : msg
-                          );
-                        });
-                      } else if (jsonData.event === 'message_end') {
-                        console.log('收到消息结束事件');
-                      }
-                    })
-                }).catch((err) => {
-                  console.error('请求ARS数据错误:', err);
-                });
-              } catch (error) {
-                console.error('JSON解析错误:', error);
-                console.error('json error:',jsonString);
-              }
+            if(fullResponse.startsWith('```json')){
+                const jsonString = fullResponse.substring(7, fullResponse.length-3);
+                console.log('提取的JSON字符串:', jsonString);
+                
+                // try {
+                //   // 将字符串转换为JSON对象
+                //   const jsonData = JSON.parse(jsonString);
+                //   console.log('解析后的JSON数据:', jsonData);
+                  
+                //   // 获取token
+                //   const token = API_TOKEN;
+                  
+                //   // 调用API
+                //   request.post(
+                //     'http://127.0.0.1:5003/execute', 
+                //     '', 
+                //     jsonData
+                //   ).then((res) => {
+                //     console.log('请求ARS数据返回:', res);
+                //   }).catch((err) => {
+                //     console.error('请求ARS数据错误:', err);
+                //   });
+                // } catch (error) {
+                //   console.error('JSON解析错误:', error);
+                // }
             } else {
               // 非JSON格式的响应处理
               console.log('响应不是JSON格式');
@@ -358,6 +309,7 @@ export default function ChatbotPage() {
           (error) => {
             console.error('流式请求错误:', error);
             setIsStreaming(false);
+
             // 更新错误状态
             setMessages(prev =>
               prev.map(msg =>
@@ -372,7 +324,7 @@ export default function ChatbotPage() {
           // 开始回调 - 清空"正在思考..."
           () => {
             setMessages(prev => {
-              return prev.map(msg =>
+              return prev.map(msg => 
                 msg.id === botMessageId
                   ? { ...msg, content: '' }
                   : msg
@@ -380,7 +332,6 @@ export default function ChatbotPage() {
             });
           }
         );
-
       } catch (error) {
         setIsStreaming(false);
         message.error('获取回复失败');
@@ -466,7 +417,7 @@ export default function ChatbotPage() {
                     onOk: async () => {
                       try {
                         const userName = getUserName();
-                        const token = API_TOKEN as string; // 从配置文件获取 token
+                        const token = API_TOKEN; // 从配置文件获取 token
                         // 使用 DELETE 请求，并在请求体中传递 user 参数
                         await request.delete(
                           `/v1/conversations/${session.id}`,
@@ -568,7 +519,7 @@ export default function ChatbotPage() {
                           // 显示上传中提示
                           const uploadingKey = `uploading-${Date.now()}`;
                           message.loading({ content: `正在上传文件: ${file.name}...`, key: uploadingKey });
-
+                          
                           // 使用simpleHttp的uploadFile方法上传文件
                           const token = API_TOKEN;
                           const userName = getUserName();
@@ -578,38 +529,38 @@ export default function ChatbotPage() {
                             file,
                             userName,
                             (percent) => {
-                              message.loading({
-                                content: `正在上传文件: ${file.name}... ${percent}%`,
-                                key: uploadingKey
+                              message.loading({ 
+                                content: `正在上传文件: ${file.name}... ${percent}%`, 
+                                key: uploadingKey 
                               });
                             }
                           );
-
+                          
                           // 解析响应
                           const data = response.data;
-
+                          
                           // 设置上传的文件信息
                           setUploadedFile({
                             fileName: data.name,
                             fileId: data.id
                           });
-
+                          
                           // 显示成功消息
-                          message.success({
-                            content: `${file.name} 上传成功，文件ID: ${data.id}`,
-                            key: uploadingKey
+                          message.success({ 
+                            content: `${file.name} 上传成功，文件ID: ${data.id}`, 
+                            key: uploadingKey 
                           });
                         } catch (error) {
                           console.error('文件上传失败:', error);
                           message.error(`文件上传失败: ${error.message}`);
                         }
-
+                        
                         // 阻止默认上传行为
                         return false;
                       }}
                     >
-                      <Button
-                        icon={<PaperClipOutlined />}
+                      <Button 
+                        icon={<PaperClipOutlined />} 
                         type="text"
                         title="上传文件"
                         disabled={!!uploadedFile}
@@ -675,7 +626,7 @@ export default function ChatbotPage() {
                           // 显示上传中提示
                           const uploadingKey = `uploading-${Date.now()}`;
                           message.loading({ content: `正在上传文件: ${file.name}...`, key: uploadingKey });
-
+                          
                           // 使用simpleHttp的uploadFile方法上传文件
                           const token = API_TOKEN;
                           const userName = getUserName();
@@ -685,38 +636,38 @@ export default function ChatbotPage() {
                             file,
                             userName,
                             (percent) => {
-                              message.loading({
-                                content: `正在上传文件: ${file.name}... ${percent}%`,
-                                key: uploadingKey
+                              message.loading({ 
+                                content: `正在上传文件: ${file.name}... ${percent}%`, 
+                                key: uploadingKey 
                               });
                             }
                           );
-
+                          
                           // 解析响应
                           const data = response.data;
-
+                          
                           // 设置上传的文件信息
                           setUploadedFile({
                             fileName: data.name,
                             fileId: data.id
                           });
-
+                          
                           // 显示成功消息
-                          message.success({
-                            content: `${file.name} 上传成功，文件ID: ${data.id}`,
-                            key: uploadingKey
+                          message.success({ 
+                            content: `${file.name} 上传成功，文件ID: ${data.id}`, 
+                            key: uploadingKey 
                           });
                         } catch (error) {
                           console.error('文件上传失败:', error);
                           message.error(`文件上传失败: ${error.message}`);
                         }
-
+                        
                         // 阻止默认上传行为
                         return false;
                       }}
                     >
-                      <Button
-                        icon={<PaperClipOutlined />}
+                      <Button 
+                        icon={<PaperClipOutlined />} 
                         type="text"
                         title="上传文件"
                         disabled={!!uploadedFile}
