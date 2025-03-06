@@ -402,6 +402,7 @@ export default function ChatbotPage() {
   };
 
   const handleNewChat = () => {
+    setSessions(prev => [{ id: 'empty', title: 'New conversation', lastMessage: '', timestamp: Date.now() }, ...prev]);
     setSelectedSession('empty');
     setMessages([]);
   };
@@ -468,12 +469,13 @@ export default function ChatbotPage() {
                         const userName = getUserName();
                         const token = API_TOKEN as string; // 从配置文件获取 token
                         // 使用 DELETE 请求，并在请求体中传递 user 参数
-                        await request.delete(
-                          `/v1/conversations/${session.id}`,
-                          token,
-                          { user: userName }
-                        );
-
+                        if (session.id!=='empty') {
+                          await request.delete(
+                            `/v1/conversations/${session.id}`,
+                            token,
+                            { user: userName }
+                          );
+                        }
                         // 从列表中移除
                         setSessions(prev => prev.filter(s => s.id !== session.id));
 
