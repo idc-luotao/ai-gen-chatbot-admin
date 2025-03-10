@@ -167,7 +167,94 @@
 }
 
 .messageText {
+  word-break: break-word;
+  white-space: pre-wrap;
   margin-bottom: 4px;
+}
+
+.formElements {
+  margin-top: 12px;
+  padding: 16px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #eaeaea;
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.formElement {
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.formElement:last-child {
+  margin-bottom: 0;
+}
+
+.inputElement {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+  width: 100%;
+}
+
+.inputElement label {
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+}
+
+.inputElement input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #d9d9d9;
+  transition: all 0.3s;
+}
+
+.inputElement input:focus {
+  border-color: #1677ff;
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.1);
+  outline: none;
+}
+
+.selectElement {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+  width: 100%;
+}
+
+.selectElement label {
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+}
+
+.selectElement select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #d9d9d9;
+  background-color: white;
+  transition: all 0.3s;
+}
+
+.selectElement select:focus {
+  border-color: #1677ff;
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.1);
+  outline: none;
+}
+
+.formButtonGroup {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #eaeaea;
 }
 
 .userMessage .messageContent {

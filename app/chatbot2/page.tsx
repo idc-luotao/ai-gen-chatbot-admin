@@ -21,6 +21,15 @@ interface Message {
     fileName: string;
     fileId: string;
   };
+  formElements?: {
+    type: 'button' | 'text' | 'select';
+    id: string;
+    label: string;
+    value?: string;
+    options?: { label: string; value: string }[];
+    placeholder?: string;
+    action?: string;
+  }[];
 }
 
 interface ChatSession {
@@ -232,17 +241,28 @@ export default function ChatbotPage() {
             console.log('收到数据块:', jsonData);
 
             if (jsonData.event === 'message' && jsonData.answer !== undefined) {
-
-
-              
-
-
               // 更新内容
               const streamContent = jsonData.answer;
               console.log('更新消息内容:', streamContent);
 
               // 累积完整响应
               fullResponse += streamContent;
+
+              // 检查是否包含表单元素
+              let formElements = null;
+              try {
+                // 尝试从响应中提取JSON表单定义
+                if (streamContent.includes('{{FORM:') && streamContent.includes('}}')) {
+                  const formMatch = streamContent.match(/{{FORM:(.*?)}}/)
+                  if (formMatch && formMatch[1]) {
+                    const formJson = formMatch[1].trim();
+                    formElements = JSON.parse(formJson);
+                    console.log('检测到表单元素:', formElements);
+                  }
+                }
+              } catch (error) {
+                console.error('解析表单元素失败:', error);
+              }
 
               // 更新消息 - 使用函数式更新确保基于最新状态
               setMessages(prev => {
@@ -255,16 +275,53 @@ export default function ChatbotPage() {
                 // 创建新的消息列表，替换机器人消息
                 return prev.map(msg =>
                   msg.id === botMessageId
-                    ? { ...msg, content: msg.content + streamContent }
+                    ? { 
+                        ...msg, 
+                        content: formElements 
+                          ? msg.content + streamContent.replace(/{{FORM:.*?}}/, '') 
+                          : msg.content + streamContent,
+                        formElements: formElements || msg.formElements
+                      }
                     : msg
                 );
               });
-
-
             } else if (jsonData.event === 'message_end') {
               console.log('收到消息结束事件，设置conversation_id');
               conversationId = jsonData.conversation_id
 
+              // 检查完整响应中是否包含表单元素
+              let formElements = null;
+              try {
+                // 尝试从完整响应中提取JSON表单定义
+                if (fullResponse.includes('{{FORM:') && fullResponse.includes('}}')) {
+                  const formMatch = fullResponse.match(/{{FORM:(.*?)}}/)
+                  if (formMatch && formMatch[1]) {
+                    const formJson = formMatch[1].trim();
+                    formElements = JSON.parse(formJson);
+                    console.log('检测到表单元素:', formElements);
+                    
+                    // 从完整响应中移除表单定义
+                    fullResponse = fullResponse.replace(/{{FORM:.*?}}/, '');
+                  }
+                }
+              } catch (error) {
+                console.error('解析表单元素失败:', error);
+              }
+              
+              // 更新最终消息
+              setMessages(prev => 
+                prev.map(msg => 
+                  msg.id === botMessageId
+                    ? { 
+                        ...msg, 
+                        content: fullResponse, 
+                        isStreaming: false,
+                        formElements: formElements || msg.formElements
+                      }
+                    : msg
+                )
+              );
+              // 更新选中的会话ID
               setSelectedSession(prev => {
                 if (prev === conversationId) return prev;
                 return conversationId;
@@ -329,8 +386,10 @@ export default function ChatbotPage() {
                         setMessages(prev => {
                           // 查找当前机器人消息
                           const currentMessage = prev.find(msg => msg.id === botMessageId);
+
                           // 如果找不到消息或消息已经包含了这个内容，则不更新
                           if (!currentMessage) return prev;
+
                           // 创建新的消息列表，替换机器人消息
                           return prev.map(msg =>
                             msg.id === botMessageId
@@ -425,6 +484,178 @@ export default function ChatbotPage() {
 
     // 其他情况显示日期
     return `${date.getMonth() + 1}月${date.getDate()}日`;
+  };
+
+  // 处理表单元素操作
+  const handleFormElementAction = (elementId: string, action: string) => {
+    console.log(`执行表单元素操作: ${elementId}, 动作: ${action}`);
+    // 根据action执行不同的操作
+    if (action.startsWith('submit:')) {
+      const formData = extractFormData();
+      const submitTo = action.replace('submit:', '');
+      handleFormSubmit(submitTo, formData);
+    } else if (action === 'clear') {
+      clearFormData();
+    }
+  };
+
+  // 处理表单元素值变化
+  const handleFormElementChange = (elementId: string, value: string) => {
+    setMessages(prev => 
+      prev.map(msg => {
+        if (!msg.formElements) return msg;
+        
+        const updatedFormElements = msg.formElements.map(element => 
+          element.id === elementId ? { ...element, value } : element
+        );
+        
+        return { ...msg, formElements: updatedFormElements };
+      })
+    );
+  };
+
+  // 提取表单数据
+  const extractFormData = () => {
+    const formData: Record<string, string> = {};
+    
+    messages.forEach(msg => {
+      if (msg.formElements) {
+        msg.formElements.forEach(element => {
+          if (element.value) {
+            formData[element.id] = element.value;
+          }
+        });
+      }
+    });
+    
+    return formData;
+  };
+
+  // 处理表单提交
+  const handleFormSubmit = async (submitTo: string, formData: Record<string, string>) => {
+    try {
+      const token = API_TOKEN;
+      const userName = getUserName();
+      
+      // 创建一个新的用户消息，显示提交的表单数据
+      const formDataMessage = Object.entries(formData)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join('\n');
+      
+      const userMessage: Message = {
+        id: `user-${Date.now()}`,
+        type: 'user',
+        content: `提交表单数据:\n${formDataMessage}`,
+        timestamp: Date.now()
+      };
+      
+      setMessages(prev => [...prev, userMessage]);
+      
+      // 创建一个空的机器人回复消息
+      const botMessageId = `bot-${Date.now()}`;
+      const botMessage: Message = {
+        id: botMessageId,
+        type: 'bot',
+        content: '处理表单数据中...',
+        timestamp: Date.now(),
+        isStreaming: true
+      };
+      
+      setMessages(prev => [...prev, botMessage]);
+      
+      // 发送表单数据到API
+      const response = await request.post(
+        submitTo,
+        token,
+        {
+          ...formData,
+          conversation_id: selectedSession === 'empty' ? '' : selectedSession,
+          user: userName
+        }
+      );
+      
+      // 更新机器人消息
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === botMessageId
+            ? { 
+                ...msg, 
+                content: `表单处理完成: ${response.data.message || '成功'}`, 
+                isStreaming: false 
+              }
+            : msg
+        )
+      );
+      
+    } catch (error) {
+      console.error('表单提交错误:', error);
+      message.error('表单提交失败');
+    }
+  };
+
+  // 清除表单数据
+  const clearFormData = () => {
+    setMessages(prev => 
+      prev.map(msg => {
+        if (!msg.formElements) return msg;
+        
+        const clearedFormElements = msg.formElements.map(element => 
+          ({ ...element, value: '' })
+        );
+        
+        return { ...msg, formElements: clearedFormElements };
+      })
+    );
+  };
+
+  // 添加示例表单到消息
+  const addExampleForm = () => {
+    const botMessageId = `bot-${Date.now()}`;
+    const botMessage: Message = {
+      id: botMessageId,
+      type: 'bot',
+      content: '请填写以下信息:',
+      timestamp: Date.now(),
+      formElements: [
+        {
+          type: 'text',
+          id: 'name',
+          label: '申請タイプ',
+          placeholder: '申請タイプを入力してください'
+        },
+        {
+          type: 'text',
+          id: 'email',
+          label: '邮箱',
+          placeholder: '请输入您的邮箱'
+        },
+        {
+          type: 'select',
+          id: 'department',
+          label: '部门',
+          options: [
+            { label: '请选择部门', value: '' },
+            { label: '技术部', value: 'tech' },
+            { label: '市场部', value: 'marketing' },
+            { label: '人力资源', value: 'hr' }
+          ]
+        },
+        {
+          type: 'button',
+          id: 'submit',
+          label: '提交',
+          action: 'submit:/v1/form-submit'
+        },
+        {
+          type: 'button',
+          id: 'clear',
+          label: '清除',
+          action: 'clear'
+        }
+      ]
+    };
+    
+    setMessages(prev => [...prev, botMessage]);
   };
 
   return (
@@ -544,6 +775,59 @@ export default function ChatbotPage() {
                             <div className={styles.messageText}>
                               {msg.content}
                               {msg.isStreaming && <span className={styles.cursorBlink}>|</span>}
+                              {msg.formElements && msg.formElements.length > 0 && (
+                                <div className={styles.formElements}>
+                                  {/* 渲染非按钮类型的表单元素 */}
+                                  {msg.formElements
+                                    .filter(element => element.type !== 'button')
+                                    .map((element) => (
+                                    <div key={element.id} className={styles.formElement}>
+                                      {element.type === 'text' && (
+                                        <div className={styles.inputElement}>
+                                          <label>{element.label}</label>
+                                          <Input 
+                                            placeholder={element.placeholder || ''}
+                                            value={element.value || ''}
+                                            onChange={(e) => handleFormElementChange(element.id, e.target.value)}
+                                            style={{ width: '100%' }}
+                                          />
+                                        </div>
+                                      )}
+                                      {element.type === 'select' && (
+                                        <div className={styles.selectElement}>
+                                          <label>{element.label}</label>
+                                          <select 
+                                            value={element.value || ''}
+                                            onChange={(e) => handleFormElementChange(element.id, e.target.value)}
+                                          >
+                                            {element.options?.map(option => (
+                                              <option key={option.value} value={option.value}>
+                                                {option.label}
+                                              </option>
+                                            ))}
+                                          </select>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                  
+                                  {/* 将按钮分组到底部 */}
+                                  <div className={styles.formButtonGroup}>
+                                    {msg.formElements
+                                      .filter(element => element.type === 'button')
+                                      .map(element => (
+                                        <Button 
+                                          key={element.id}
+                                          onClick={() => handleFormElementAction(element.id, element.action || '')}
+                                          type={element.id === 'submit' ? 'primary' : undefined}
+                                        >
+                                          {element.label}
+                                        </Button>
+                                      ))
+                                    }
+                                  </div>
+                                </div>
+                              )}
                             </div>
                             <div className={styles.messageTime}>
                               {formatTime(msg.timestamp)}
@@ -654,6 +938,14 @@ export default function ChatbotPage() {
                       icon={<SendOutlined />}
                     >
                       发送
+                    </Button>
+                    {/* 添加测试表单按钮 */}
+                    <Button
+                      onClick={addExampleForm}
+                      style={{ marginLeft: '8px' }}
+                      disabled={isStreaming}
+                    >
+                      测试表单
                     </Button>
                   </div>
                 </div>
