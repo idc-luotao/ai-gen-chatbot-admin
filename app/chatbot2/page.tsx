@@ -223,13 +223,12 @@ export default function ChatbotPage() {
 
         // 准备请求数据
         const requestData = {
-          inputs: {},
+          inputs: { explainJson: true },
           query: currentUploadedFile ? `[文件上传] ${currentUploadedFile.fileName}` : currentInput,
           response_mode: "streaming",
           conversation_id: conversationId || "",
           user: userName,
-          files: files
-        };
+          files: files};
 
         // 使用simpleHttp中的stream方法
         await request.stream(
@@ -260,6 +259,43 @@ export default function ChatbotPage() {
                     console.log('检测到表单元素:', formElements);
                   }
                 }
+                // 检查是否包含API参数定义
+                else if (streamContent.includes('{{PARAMS:') && streamContent.includes('}}')) {
+                  const paramsMatch = streamContent.match(/{{PARAMS:(.*?)}}/)
+                  if (paramsMatch && paramsMatch[1]) {
+                    const paramsJson = paramsMatch[1].trim();
+                    const paramsObj = JSON.parse(paramsJson);
+
+                    if (paramsObj.params && Array.isArray(paramsObj.params)) {
+                      // 创建表单元素
+                      formElements = paramsObj.params.map((param: any) => ({
+                        type: param.param_type || 'text',
+                        id: param.api_param_name,
+                        label: param.api_param_name,
+                        placeholder: `请输入${param.api_param_name}`,
+                        value: ''
+                      }));
+
+                      // 添加提交和清除按钮
+                      formElements.push(
+                        {
+                          type: 'button',
+                          id: 'submit',
+                          label: '提交',
+                          action: 'submit:/v1/form-submit'
+                        },
+                        {
+                          type: 'button',
+                          id: 'clear',
+                          label: '清除',
+                          action: 'clear'
+                        }
+                      );
+
+                      console.log('从参数生成表单元素:', formElements);
+                    }
+                  }
+                }
               } catch (error) {
                 console.error('解析表单元素失败:', error);
               }
@@ -275,13 +311,13 @@ export default function ChatbotPage() {
                 // 创建新的消息列表，替换机器人消息
                 return prev.map(msg =>
                   msg.id === botMessageId
-                    ? { 
-                        ...msg, 
-                        content: formElements 
-                          ? msg.content + streamContent.replace(/{{FORM:.*?}}/, '') 
-                          : msg.content + streamContent,
-                        formElements: formElements || msg.formElements
-                      }
+                    ? {
+                      ...msg,
+                      content: formElements
+                        ? msg.content + streamContent.replace(/{{FORM:.*?}}/, '').replace(/{{PARAMS:.*?}}/, '')
+                        : msg.content + streamContent,
+                      formElements: formElements || msg.formElements
+                    }
                     : msg
                 );
               });
@@ -299,25 +335,65 @@ export default function ChatbotPage() {
                     const formJson = formMatch[1].trim();
                     formElements = JSON.parse(formJson);
                     console.log('检测到表单元素:', formElements);
-                    
+
                     // 从完整响应中移除表单定义
                     fullResponse = fullResponse.replace(/{{FORM:.*?}}/, '');
+                  }
+                }
+                // 检查是否包含API参数定义
+                else if (fullResponse.includes('{{PARAMS:') && fullResponse.includes('}}')) {
+                  const paramsMatch = fullResponse.match(/{{PARAMS:(.*?)}}/)
+                  if (paramsMatch && paramsMatch[1]) {
+                    const paramsJson = paramsMatch[1].trim();
+                    const paramsObj = JSON.parse(paramsJson);
+
+                    if (paramsObj.params && Array.isArray(paramsObj.params)) {
+                      // 创建表单元素
+                      formElements = paramsObj.params.map((param: any) => ({
+                        type: param.param_type || 'text',
+                        id: param.api_param_name,
+                        label: param.api_param_name,
+                        placeholder: `请输入${param.api_param_name}`,
+                        value: ''
+                      }));
+
+                      // 添加提交和清除按钮
+                      formElements.push(
+                        {
+                          type: 'button',
+                          id: 'submit',
+                          label: '提交',
+                          action: 'submit:/v1/form-submit'
+                        },
+                        {
+                          type: 'button',
+                          id: 'clear',
+                          label: '清除',
+                          action: 'clear'
+                        }
+                      );
+
+                      console.log('从参数生成表单元素:', formElements);
+                    }
+
+                    // 从完整响应中移除参数定义
+                    fullResponse = fullResponse.replace(/{{PARAMS:.*?}}/, '');
                   }
                 }
               } catch (error) {
                 console.error('解析表单元素失败:', error);
               }
-              
+
               // 更新最终消息
-              setMessages(prev => 
-                prev.map(msg => 
+              setMessages(prev =>
+                prev.map(msg =>
                   msg.id === botMessageId
-                    ? { 
-                        ...msg, 
-                        content: fullResponse, 
-                        isStreaming: false,
-                        formElements: formElements || msg.formElements
-                      }
+                    ? {
+                      ...msg,
+                      content: fullResponse,
+                      isStreaming: false,
+                      formElements: formElements || msg.formElements
+                    }
                     : msg
                 )
               );
@@ -329,7 +405,7 @@ export default function ChatbotPage() {
             }
           },
           // 完成回调
-          () => {
+          async () => {
             console.log('流式传输完成');
             setIsStreaming(false);
             // 获取完整的响应消息
@@ -345,68 +421,25 @@ export default function ChatbotPage() {
             const indexStart = fullResponse.indexOf('```json');
             if (indexStart >= 0) {
               const indexEnd = fullResponse.lastIndexOf('```');
-              const jsonString = fullResponse.substring(indexStart + 8, indexEnd-1);
+              const jsonString = fullResponse.substring(indexStart + 8, indexEnd - 1);
               console.log('提取的JSON字符串:', jsonString);
 
               try {
                 // 将字符串转换为JSON对象
                 const jsonData = JSON.parse(jsonString);
                 console.log('解析后的JSON数据发送请求:', jsonData);
-
-                // 获取token
-                const token = API_TOKEN as string;
                 // 调用API
-                request.post(
-                  'http://localhost:5003/execute',
+                const res1 = await request.get(
+                  'http://localhost:5003/get_param',
                   '',
-                  jsonData
-                ).then((res) => {
-                  console.log('请求ARS数据返回:', res);
-                  // 准备请求数据
-                  const requestDataJon = {
-                    inputs: {},
-                    query: res,
-                    response_mode: "streaming",
-                    conversation_id: conversationId || "",
-                    user: userName,
-                    files: []
-                  };
-                  request.stream(
-                    '/v1/chat-messages',
-                    token,
-                    requestDataJon,
-                    (jsonData) => {
-                      if (jsonData.event === 'message' && jsonData.answer !== undefined) {
-                        // 更新内容
-                        const streamContent = jsonData.answer;
-                        console.log('更新消息内容2:', streamContent);
-                        // 累积完整响应
-                        fullResponse += streamContent;
-                        // 更新消息 - 使用函数式更新确保基于最新状态
-                        setMessages(prev => {
-                          // 查找当前机器人消息
-                          const currentMessage = prev.find(msg => msg.id === botMessageId);
-
-                          // 如果找不到消息或消息已经包含了这个内容，则不更新
-                          if (!currentMessage) return prev;
-
-                          // 创建新的消息列表，替换机器人消息
-                          return prev.map(msg =>
-                            msg.id === botMessageId
-                              ? { ...msg, content: msg.content + streamContent }
-                              : msg
-                          );
-                        });
-                      } else if (jsonData.event === 'message_end') {
-                        console.log('收到消息结束事件');
-                      }
-                    })
-                }).catch((err) => {
-                  console.error('请求ARS数据错误:', err);
-                });
+                  {
+                    params: jsonData
+                  }
+                )
+                generateFormFromParams(res1.data.params,'');
               } catch (error) {
                 console.error('JSON解析错误:', error);
-                console.error('json error:',jsonString);
+                console.error('json error:', jsonString);
               }
             } else {
               // 非JSON格式的响应处理
@@ -499,16 +532,118 @@ export default function ChatbotPage() {
     }
   };
 
+  // 处理表单提交
+  const handleFormSubmit = async (submitTo: string, formData: Record<string, string>) => {
+
+    const token = API_TOKEN as string;
+    const userName = getUserName();
+
+    // // 创建一个新的用户消息，显示提交的表单数据
+    // const formDataMessage = Object.entries(formData)
+    //   .map(([key, value]) => `${key}: ${value}`)
+    //   .join('\n');
+
+    // const userMessage: Message = {
+    //   id: `user-${Date.now()}`,
+    //   type: 'user',
+    //   content: `提交表单数据:\n${formDataMessage}`,
+    //   timestamp: Date.now()
+    // };
+
+    // setMessages(prev => [...prev, userMessage]);
+
+    const funSendQuestionStram = async (param: any) => {
+      request.stream(
+        '/v1/chat-messages',
+        token,
+        param,
+        (jsonData) => {
+          if (jsonData.event === 'message' && jsonData.answer !== undefined) {
+            // 更新内容
+            const streamContent = jsonData.answer;
+            console.log('更新消息内容2:', streamContent);
+            // 更新消息 - 使用函数式更新确保基于最新状态
+            setMessages(prev => {
+              // 查找当前机器人消息
+              const currentMessage = prev.find(msg => msg.id === botMessageId);
+
+              // 如果找不到消息或消息已经包含了这个内容，则不更新
+              if (!currentMessage) return prev;
+
+              // 创建新的消息列表，替换机器人消息
+              return prev.map(msg =>
+                msg.id === botMessageId
+                  ? { ...msg, content: msg.content + streamContent }
+                  : msg
+              );
+            });
+          } else if (jsonData.event === 'message_end') {
+            console.log('收到消息结束事件');
+          }
+        },
+        () => {
+          console.log('收到消息结束事件onComplete');
+          setIsStreaming(false);
+        }
+      )
+    }
+
+    // 创建一个空的机器人回复消息
+    const botMessageId = `bot-${Date.now()}`;
+    const botMessage: Message = {
+      id: botMessageId,
+      type: 'bot',
+      content: '处理表单数据中...',
+      timestamp: Date.now(),
+      isStreaming: true
+    };
+
+    // 添加空的机器人消息到消息列表
+    setMessages(prev => [...prev, botMessage]);
+    setIsStreaming(true);
+
+    const requestParam = {
+      "id": "1",
+      "type": "flow",
+      "params": formData
+    };
+
+    const funcMakeLLMRequest = (question:string, prompt:string) => {
+      const errorResponseQuest = {
+        inputs: { explainJson: true },
+        query: question,
+        response_mode: "streaming",
+        conversation_id: selectedSession || "",
+        user: userName,
+        files: [],
+        question_type: "2",
+        dynamic_prompt: encodeURIComponent(prompt)
+      };
+      return errorResponseQuest;
+    }
+
+    try {
+      const responseExecute = await request.post('http://localhost:5003/execute', '', requestParam);
+      const questionData = responseExecute.data.result_data;
+      const dynamicPrompt = responseExecute.data.message;
+      await funSendQuestionStram(funcMakeLLMRequest(questionData, dynamicPrompt));
+    } catch (error: any) {
+      const errorResponseData = error.response?.data.error;
+      const dynamicPrompt = errorResponseData.message;
+      await funSendQuestionStram(funcMakeLLMRequest(errorResponseData,dynamicPrompt));
+    }
+  };
+
   // 处理表单元素值变化
   const handleFormElementChange = (elementId: string, value: string) => {
-    setMessages(prev => 
+    setMessages(prev =>
       prev.map(msg => {
         if (!msg.formElements) return msg;
-        
-        const updatedFormElements = msg.formElements.map(element => 
+
+        const updatedFormElements = msg.formElements.map(element =>
           element.id === elementId ? { ...element, value } : element
         );
-        
+
         return { ...msg, formElements: updatedFormElements };
       })
     );
@@ -517,7 +652,7 @@ export default function ChatbotPage() {
   // 提取表单数据
   const extractFormData = () => {
     const formData: Record<string, string> = {};
-    
+
     messages.forEach(msg => {
       if (msg.formElements) {
         msg.formElements.forEach(element => {
@@ -527,85 +662,107 @@ export default function ChatbotPage() {
         });
       }
     });
-    
-    return formData;
-  };
 
-  // 处理表单提交
-  const handleFormSubmit = async (submitTo: string, formData: Record<string, string>) => {
-    try {
-      const token = API_TOKEN;
-      const userName = getUserName();
-      
-      // 创建一个新的用户消息，显示提交的表单数据
-      const formDataMessage = Object.entries(formData)
-        .map(([key, value]) => `${key}: ${value}`)
-        .join('\n');
-      
-      const userMessage: Message = {
-        id: `user-${Date.now()}`,
-        type: 'user',
-        content: `提交表单数据:\n${formDataMessage}`,
-        timestamp: Date.now()
-      };
-      
-      setMessages(prev => [...prev, userMessage]);
-      
-      // 创建一个空的机器人回复消息
-      const botMessageId = `bot-${Date.now()}`;
-      const botMessage: Message = {
-        id: botMessageId,
-        type: 'bot',
-        content: '处理表单数据中...',
-        timestamp: Date.now(),
-        isStreaming: true
-      };
-      
-      setMessages(prev => [...prev, botMessage]);
-      
-      // 发送表单数据到API
-      const response = await request.post(
-        submitTo,
-        token,
-        {
-          ...formData,
-          conversation_id: selectedSession === 'empty' ? '' : selectedSession,
-          user: userName
-        }
-      );
-      
-      // 更新机器人消息
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === botMessageId
-            ? { 
-                ...msg, 
-                content: `表单处理完成: ${response.data.message || '成功'}`, 
-                isStreaming: false 
-              }
-            : msg
-        )
-      );
-      
-    } catch (error) {
-      console.error('表单提交错误:', error);
-      message.error('表单提交失败');
-    }
+    return formData;
   };
 
   // 清除表单数据
   const clearFormData = () => {
-    setMessages(prev => 
+    setMessages(prev =>
       prev.map(msg => {
         if (!msg.formElements) return msg;
-        
-        const clearedFormElements = msg.formElements.map(element => 
+
+        const clearedFormElements = msg.formElements.map(element =>
           ({ ...element, value: '' })
         );
-        
+
         return { ...msg, formElements: clearedFormElements };
       })
     );
+  };
+
+  // 根据JSON参数生成表单
+  const generateFormFromParams = (params: any[], submitEndpoint: string = '/v1/form-submit') => {
+    const botMessageId = `bot-${Date.now()}`;
+
+    // 创建表单元素
+    const formElements = params.map(param => ({
+      type: param.param_type,
+      id: param.api_param_name,
+      label: param.api_param_name, // 使用参数名作为标签
+      placeholder: `请输入${param.api_param_name}`,
+      value: ''
+    }));
+
+    // 添加提交和清除按钮
+    formElements.push(
+      {
+        type: 'button',
+        id: 'submit',
+        label: '提交',
+        action: `submit:${submitEndpoint}`
+      },
+      {
+        type: 'button',
+        id: 'clear',
+        label: '清除',
+        action: 'clear'
+      }
+    );
+
+    // 创建机器人消息
+    const botMessage: Message = {
+      id: botMessageId,
+      type: 'bot',
+      content: '请填写以下参数:',
+      timestamp: Date.now(),
+      formElements: formElements as any
+    };
+
+    // 添加到消息列表
+    setMessages(prev => [...prev, botMessage]);
+  };
+
+  // 测试生成表单的函数
+  const testGenerateForm = async () => {
+
+    try {
+      const res1 = await request.get(
+        'http://localhost:5003/get_param',
+        '',
+        {
+          params: {
+            id: 1,
+            type: 'flow'
+          }
+        }
+      )
+      generateFormFromParams(res1.data.params, '/v1/api/workflow/start');
+    } catch (error) {
+      console.error('获取参数失败:', error);
+    }
+    // const paramsJson = {
+    //   "params": [
+    //     {
+    //       "api_param_name": "UserNo",
+    //       "param_type": "text"
+    //     },
+    //     {
+    //       "api_param_name": "FK_Flow",
+    //       "param_type": "text"
+    //     },
+    //     {
+    //       "api_param_name": "ser",
+    //       "param_type": "text"
+    //     },
+    //     {
+    //       "api_param_name": "MainTblName",
+    //       "param_type": "text"
+    //     }
+    //   ]
+    // };
+
+
   };
 
   // 添加示例表单到消息
@@ -654,7 +811,7 @@ export default function ChatbotPage() {
         }
       ]
     };
-    
+
     setMessages(prev => [...prev, botMessage]);
   };
 
@@ -700,7 +857,7 @@ export default function ChatbotPage() {
                         const userName = getUserName();
                         const token = API_TOKEN as string; // 从配置文件获取 token
                         // 使用 DELETE 请求，并在请求体中传递 user 参数
-                        if (session.id!=='empty') {
+                        if (session.id !== 'empty') {
                           await request.delete(
                             `/v1/conversations/${session.id}`,
                             token,
@@ -781,42 +938,42 @@ export default function ChatbotPage() {
                                   {msg.formElements
                                     .filter(element => element.type !== 'button')
                                     .map((element) => (
-                                    <div key={element.id} className={styles.formElement}>
-                                      {element.type === 'text' && (
-                                        <div className={styles.inputElement}>
-                                          <label>{element.label}</label>
-                                          <Input 
-                                            placeholder={element.placeholder || ''}
-                                            value={element.value || ''}
-                                            onChange={(e) => handleFormElementChange(element.id, e.target.value)}
-                                            style={{ width: '100%' }}
-                                          />
-                                        </div>
-                                      )}
-                                      {element.type === 'select' && (
-                                        <div className={styles.selectElement}>
-                                          <label>{element.label}</label>
-                                          <select 
-                                            value={element.value || ''}
-                                            onChange={(e) => handleFormElementChange(element.id, e.target.value)}
-                                          >
-                                            {element.options?.map(option => (
-                                              <option key={option.value} value={option.value}>
-                                                {option.label}
-                                              </option>
-                                            ))}
-                                          </select>
-                                        </div>
-                                      )}
-                                    </div>
-                                  ))}
-                                  
+                                      <div key={element.id} className={styles.formElement}>
+                                        {element.type === 'text' && (
+                                          <div className={styles.inputElement}>
+                                            <label>{element.label}</label>
+                                            <Input
+                                              placeholder={element.placeholder || ''}
+                                              value={element.value || ''}
+                                              onChange={(e) => handleFormElementChange(element.id, e.target.value)}
+                                              style={{ width: '100%' }}
+                                            />
+                                          </div>
+                                        )}
+                                        {element.type === 'select' && (
+                                          <div className={styles.selectElement}>
+                                            <label>{element.label}</label>
+                                            <select
+                                              value={element.value || ''}
+                                              onChange={(e) => handleFormElementChange(element.id, e.target.value)}
+                                            >
+                                              {element.options?.map(option => (
+                                                <option key={option.value} value={option.value}>
+                                                  {option.label}
+                                                </option>
+                                              ))}
+                                            </select>
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+
                                   {/* 将按钮分组到底部 */}
                                   <div className={styles.formButtonGroup}>
                                     {msg.formElements
                                       .filter(element => element.type === 'button')
                                       .map(element => (
-                                        <Button 
+                                        <Button
                                           key={element.id}
                                           onClick={() => handleFormElementAction(element.id, element.action || '')}
                                           type={element.id === 'submit' ? 'primary' : undefined}
@@ -940,12 +1097,20 @@ export default function ChatbotPage() {
                       发送
                     </Button>
                     {/* 添加测试表单按钮 */}
-                    <Button
+                    {/* <Button
                       onClick={addExampleForm}
                       style={{ marginLeft: '8px' }}
                       disabled={isStreaming}
                     >
                       测试表单
+                    </Button> */}
+                    {/* 添加测试JSON参数表单按钮 */}
+                    <Button
+                      onClick={testGenerateForm}
+                      style={{ marginLeft: '8px' }}
+                      disabled={isStreaming}
+                    >
+                      测试JSON表单
                     </Button>
                   </div>
                 </div>
