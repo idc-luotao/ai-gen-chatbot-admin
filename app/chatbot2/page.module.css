@@ -258,7 +258,8 @@
   border-left: 3px solid #1677ff;
 }
 
-.fileName, .fileId {
+.fileName,
+.fileId {
   margin: 4px 0;
 }
 
@@ -305,10 +306,57 @@
 }
 
 @keyframes blink {
-  from, to {
+  from,
+  to {
     opacity: 1;
   }
   50% {
     opacity: 0;
   }
+}
+
+.waveAnimation {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 40px;
+}
+
+.waveBar {
+  width: 3px;
+  height: 20px;
+  background: #1890ff;
+  margin: 0 2px;
+  border-radius: 2px;
+  transition: height 0.1s ease;
+}
+
+.waveBarActive {
+  animation: wave 0.5s infinite ease-in-out alternate;
+  animation-delay: calc(var(--i, 0) * 0.1s);
+}
+
+@keyframes wave {
+  0% {
+    height: 3px;
+  }
+  100% {
+    height: 15px;
+  }
+}
+
+.speakerButton {
+  background: none;
+  border: none;
+  color: #1890ff;
+  cursor: pointer;
+  padding: 0 8px;
+  margin-left: 8px;
+  font-size: 16px;
+  line-height: 1;
+  transition: color 0.3s;
+}
+
+.speakerButton:hover {
+  color: #40a9ff;
 }

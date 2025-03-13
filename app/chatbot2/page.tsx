@@ -2,11 +2,36 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Layout, List, Input, Button, Avatar, Empty, Upload, message, Modal } from 'antd';
-import { SendOutlined, DeleteOutlined, PlusOutlined, PaperClipOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { SendOutlined, DeleteOutlined, PlusOutlined, PaperClipOutlined, ExclamationCircleOutlined, AudioOutlined, LoadingOutlined, StopOutlined } from '@ant-design/icons';
 import styles from './page.module.css';
 import { request } from '../../utils/simpleHttp';
 import { getUserName } from '../../utils/storage';
 import { API_TOKEN } from '../../utils/config';
+import { SoundOutlined } from '@ant-design/icons';
+
+// 型定義を追加（ファイル上部）
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
+
+// SpeechRecognitionインターフェースの型定義
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  grammars: any;
+  interimResults: boolean;
+  lang: string;
+  maxAlternatives: number;
+  onresult: (event: any) => void;
+  onend: () => void;
+  onerror: (event: any) => void;
+  onstart: () => void;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+}
 
 const { Header, Content, Sider } = Layout;
 const { confirm } = Modal;
@@ -41,6 +66,225 @@ export default function ChatbotPage() {
   const [imageUrl, setImageUrl] = useState('');
   const [uploadedFile, setUploadedFile] = useState<{ fileName: string, fileId: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // 状態変数を追加（現在の状態変数の下に追加）
+  const [recognition, setRecognition] = useState<SpeechRecognition | null>(
+    null
+  );
+  const [isRecording, setIsRecording] = useState(false);
+
+  // 言語コードを音声認識API用の形式に変換する関数
+  const getRecognitionLanguage = (langCode: string) => {
+    switch (langCode) {
+      case "ja":
+        return "ja-JP";
+      case "zh":
+        return "zh-CN";
+      case "en":
+        return "en-US";
+      case "ko":
+        return "ko-KR";
+      case "fr":
+        return "fr-FR";
+      case "de":
+        return "de-DE";
+      case "es":
+        return "es-ES";
+      case "ru":
+        return "ru-RU";
+      default:
+        return "ja-JP";
+    }
+  };
+
+  // 現在の言語コードを取得と設定
+  const [language, setLanguage] = useState("ja"); // デフォルト値を設定
+
+  // useEffectでクライアントサイドでのみlocalStorageにアクセス
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedLang = localStorage.getItem("language") || "ja";
+      setLanguage(storedLang);
+    }
+  }, []);
+
+  // 言語変更を監視
+  useEffect(() => {
+    // クライアントサイドでのみ実行
+    if (typeof window === "undefined") return;
+    // 初期値を設定
+    const currentLang = localStorage.getItem("language") || "ja";
+    setLanguage(currentLang);
+
+    // layout.tsxでの言語変更を検出する関数
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === "language") {
+        const newLang = event.newValue || "ja";
+        setLanguage(newLang);
+
+        // 音声認識インスタンスが存在する場合、言語を変更
+        if (recognition) {
+          recognition.lang = getRecognitionLanguage(newLang);
+        }
+      }
+    };
+
+    // イベントリスナーを追加（他のタブでの変更を検出）
+    window.addEventListener("storage", handleStorageChange);
+
+    // クリーンアップ
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, [recognition]);
+
+  // 同一タブでの言語変更を監視
+  useEffect(() => {
+    const checkLanguageChange = () => {
+      if (typeof window === "undefined") return;
+      const storedLang = localStorage.getItem("language") || "ja";
+      if (storedLang !== language) {
+        setLanguage(storedLang);
+        // 音声認識インスタンスが存在する場合、言語を変更
+        if (recognition) {
+          recognition.lang = getRecognitionLanguage(storedLang);
+        }
+      }
+    };
+
+    // 定期的に確認（UIのレンダリング時など）
+    const interval = setInterval(checkLanguageChange, 1000);
+    return () => clearInterval(interval);
+  }, [language, recognition]);
+
+  // 音声認識開始
+  const handleStartRecording = () => {
+    setIsRecording(true);
+
+    // Web Speech APIのサポート確認
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      message.error("このブラウザは音声認識をサポートしていません");
+      return;
+    }
+
+    try {
+      // 音声認識インスタンスの作成
+      const recognitionInstance = new SpeechRecognition();
+
+      // 言語設定
+      recognitionInstance.lang = getRecognitionLanguage(language);
+      recognitionInstance.continuous = false;
+      recognitionInstance.interimResults = true;
+      recognitionInstance.continuous = true;
+      let latestTranscript = "";
+
+      // 認識結果の処理
+      recognitionInstance.onresult = (event: any) => {
+        const transcript = Array.from(event.results)
+          .map((result) => result[0])
+          .map((result) => result.transcript)
+          .join("");
+
+        setInputValue(transcript);
+        console.log("音声認識結果:", transcript);
+        latestTranscript = transcript;
+      };
+
+      // エラー処理
+      recognitionInstance.onerror = (event: any) => {
+        console.error("音声認識エラー:", event.error);
+
+        // エラータイプに応じたメッセージ表示
+        if (event.error === "network") {
+          message.error(
+            "ネットワーク接続エラー: インターネット接続を確認してください"
+          );
+        } else if (event.error === "not-allowed") {
+          message.error("マイクへのアクセスが許可されていません");
+        } else if (event.error === "no-speech") {
+          message.warning("音声が検出されませんでした");
+        } else {
+          message.error(`音声認識エラー: ${event.error}`);
+        }
+
+        // 状態のリセット
+        setIsRecording(false);
+
+        // 認識インスタンスを停止してクリーンアップ
+        recognitionInstance.stop();
+      };
+
+      // 認識終了時の処理
+      recognitionInstance.onend = () => {
+        // setInputValue(latestTranscript);
+        setIsRecording(false);
+        handleSendMessage(latestTranscript);
+      };
+
+      // 音声認識開始
+      recognitionInstance.start();
+      recognitionInstance.getLatestTranscript = () => latestTranscript;
+      setRecognition(recognitionInstance);
+    } catch (error: unknown) {
+      console.error("音声認識初期化エラー:", error);
+      message.error("音声認識の開始に失敗しました");
+      setIsRecording(false);
+    }
+  };
+
+  const handleStopRecording = () => {
+    setIsRecording(false);
+    if (recognition) {
+      recognition.stop();
+      setRecognition(null);
+    }
+  };
+
+  // コンポーネント内に以下の関数を追加
+  const handleSpeakMessage = (text: string) => {
+    if ("speechSynthesis" in window) {
+      // 再生中の音声を停止
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+
+      // 現在の言語設定に基づいて音声言語を設定
+      switch (language) {
+        case "ja":
+          utterance.lang = "ja-JP";
+          break;
+        case "zh":
+          utterance.lang = "zh-CN";
+          break;
+        case "en":
+          utterance.lang = "en-US";
+          break;
+        case "ko":
+          utterance.lang = "ko-KR";
+          break;
+        case "fr":
+          utterance.lang = "fr-FR";
+          break;
+        case "de":
+          utterance.lang = "de-DE";
+          break;
+        case "es":
+          utterance.lang = "es-ES";
+          break;
+        case "ru":
+          utterance.lang = "ru-RU";
+          break;
+        default:
+          utterance.lang = "ja-JP";
+      }
+
+      window.speechSynthesis.speak(utterance);
+    } else {
+      message.warning("お使いのブラウザは音声合成をサポートしていません");
+    }
+  };
 
   // 获取会话列表
   useEffect(() => {
@@ -137,14 +381,14 @@ export default function ChatbotPage() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = async (directText?: string) => {
     // 如果没有输入内容且没有上传文件，则不发送
-    if (!inputValue.trim() && !uploadedFile) return;
+    if (!directText && !inputValue.trim() && !uploadedFile) return;
 
     const newMessage: Message = {
       id: Date.now().toString(),
       type: 'user',
-      content: uploadedFile ? '' : inputValue,
+      content: uploadedFile ? '' : directText ? directText : inputValue,
       timestamp: Date.now(),
       fileInfo: uploadedFile || undefined
     };
@@ -305,46 +549,46 @@ export default function ChatbotPage() {
                   jsonData
                 ).then((res) => {
                   console.log('请求ARS数据返回:', res);
-                  // 准备请求数据
-                  const requestDataJon = {
-                    inputs: {},
-                    query: res,
-                    response_mode: "streaming",
-                    conversation_id: conversationId || "",
-                    user: userName,
+                    // 准备请求数据
+                    const requestDataJon = {
+                      inputs: {},
+                      query: res,
+                      response_mode: "streaming",
+                      conversation_id: conversationId || "",
+                      user: userName,
                     files: []
-                  };
-                  request.stream(
+                    };
+                    request.stream(
                     '/v1/chat-messages',
-                    token,
-                    requestDataJon,
-                    (jsonData) => {
+                      token,
+                      requestDataJon,
+                      (jsonData) => {
                       if (jsonData.event === 'message' && jsonData.answer !== undefined) {
-                        // 更新内容
-                        const streamContent = jsonData.answer;
+                          // 更新内容
+                          const streamContent = jsonData.answer;
                         console.log('更新消息内容2:', streamContent);
-                        // 累积完整响应
-                        fullResponse += streamContent;
-                        // 更新消息 - 使用函数式更新确保基于最新状态
+                          // 累积完整响应
+                          fullResponse += streamContent;
+                          // 更新消息 - 使用函数式更新确保基于最新状态
                         setMessages(prev => {
-                          // 查找当前机器人消息
+                            // 查找当前机器人消息
                           const currentMessage = prev.find(msg => msg.id === botMessageId);
-                          // 如果找不到消息或消息已经包含了这个内容，则不更新
-                          if (!currentMessage) return prev;
-                          // 创建新的消息列表，替换机器人消息
+                            // 如果找不到消息或消息已经包含了这个内容，则不更新
+                            if (!currentMessage) return prev;
+                            // 创建新的消息列表，替换机器人消息
                           return prev.map(msg =>
-                            msg.id === botMessageId
+                              msg.id === botMessageId
                               ? { ...msg, content: msg.content + streamContent }
-                              : msg
-                          );
-                        });
+                                : msg
+                            );
+                          });
                       } else if (jsonData.event === 'message_end') {
                         console.log('收到消息结束事件');
-                      }
-                    })
+                        }
+                  })
                 }).catch((err) => {
                   console.error('请求ARS数据错误:', err);
-                });
+                  });
               } catch (error) {
                 console.error('JSON解析错误:', error);
                 console.error('json error:',jsonString);
@@ -543,7 +787,20 @@ export default function ChatbotPage() {
                           <div className={styles.messageContent}>
                             <div className={styles.messageText}>
                               {msg.content}
-                              {msg.isStreaming && <span className={styles.cursorBlink}>|</span>}
+                              {msg.isStreaming && (
+                                <span className={styles.cursorBlink}>|</span>
+                              )}
+                              {msg.type === "bot" && (
+                                <button
+                                  className={styles.speakerButton}
+                                  onClick={() =>
+                                    handleSpeakMessage(msg.content)
+                                  }
+                                  title="音声で再生"
+                                >
+                                  <SoundOutlined />
+                                </button>
+                              )}
                             </div>
                             <div className={styles.messageTime}>
                               {formatTime(msg.timestamp)}
@@ -645,16 +902,44 @@ export default function ChatbotPage() {
                       }}
                     />
                   )}
-                  <div className={styles.sendButton}>
-                    <Button
-                      type="primary"
-                      onClick={handleSendMessage}
-                      loading={isStreaming}
-                      disabled={isStreaming}
-                      icon={<SendOutlined />}
+                  {/* 音声認識インジケーターを追加 */}
+                  {isRecording && (
+                    <div
+                      className="recording-indicator"
+                      style={{ padding: "5px 10px", color: "red" }}
                     >
+                      <LoadingOutlined style={{ marginRight: "5px" }} />{" "}
+                      音声認識中...
+                    </div>
+                  )}
+                  {/* 入力欄が空かどうかで表示するボタンを切り替え */}
+                  <div className={styles.sendButton}>
+                    {!inputValue || isRecording ? (
+                      // 入力値がない場合「または」録音中の場合は録音ボタンを表示
+                      <Button
+                        type="primary"
+                        onMouseDown={handleStartRecording}
+                        onMouseUp={handleStopRecording}
+                        onTouchStart={handleStartRecording}
+                        onTouchEnd={handleStopRecording}
+                        loading={isStreaming || isRecording}
+                        disabled={isStreaming}
+                        icon={<AudioOutlined />}
+                        shape="circle"
+                        size="large"
+                      />
+                    ) : (
+                      // 入力値があり、かつ録音中でない場合のみ送信ボタンを表示
+                      <Button
+                        type="primary"
+                        onClick={() => handleSendMessage()}
+                        loading={isStreaming}
+                        disabled={isStreaming}
+                        icon={<SendOutlined />}
+                      >
                       发送
-                    </Button>
+                      </Button>
+                      )}
                   </div>
                 </div>
               </div>
@@ -752,16 +1037,44 @@ export default function ChatbotPage() {
                       }}
                     />
                   )}
-                  <div className={styles.sendButton}>
-                    <Button
-                      type="primary"
-                      onClick={handleSendMessage}
-                      loading={isStreaming}
-                      disabled={isStreaming}
-                      icon={<SendOutlined />}
+                  {/* ここに音声認識インジケーターを追加 */}
+                  {isRecording && (
+                    <div
+                      className="recording-indicator"
+                      style={{ padding: "5px 10px", color: "red" }}
                     >
+                      <LoadingOutlined style={{ marginRight: "5px" }} />{" "}
+                      音声認識中...
+                    </div>
+                  )}
+                  {/* 入力欄が空かどうかで表示するボタンを切り替え */}
+                  <div className={styles.sendButton}>
+                    {!inputValue || isRecording ? (
+                      // 入力値がない場合「または」録音中の場合は録音ボタンを表示
+                      <Button
+                        type="primary"
+                        onMouseDown={handleStartRecording}
+                        onMouseUp={handleStopRecording}
+                        onTouchStart={handleStartRecording}
+                        onTouchEnd={handleStopRecording}
+                        loading={isStreaming || isRecording}
+                        disabled={isStreaming}
+                        icon={<AudioOutlined />}
+                        shape="circle"
+                        size="large"
+                      />
+                    ) : (
+                      // 入力値があり、かつ録音中でない場合のみ送信ボタンを表示
+                      <Button
+                        type="primary"
+                        onClick={() => handleSendMessage()}
+                        loading={isStreaming}
+                        disabled={isStreaming}
+                        icon={<SendOutlined />}
+                      >
                       发送
-                    </Button>
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
