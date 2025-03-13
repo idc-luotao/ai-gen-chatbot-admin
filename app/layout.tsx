@@ -34,11 +34,7 @@ function AppLayout({ children }: { children: ReactNode }) {
   ];
 
   const [sourceLang, setSourceLang] = useState("");
-  const [isRecording, setIsRecording] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
-
-  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     // localStorageから言語設定を読み込む（ない場合は日本語をデフォルトに）
@@ -146,7 +142,6 @@ function AppLayout({ children }: { children: ReactNode }) {
                 </ul>
               }
               trigger={['click']}
-              disabled={isRecording || isProcessing}
               open={langDropdownOpen}
               onOpenChange={setLangDropdownOpen}
             >
