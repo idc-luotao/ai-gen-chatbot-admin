@@ -36,6 +36,8 @@ const translations: Translations = {
     'llm.enterApiKey': '请输入API密钥',
     'llm.saveSuccess': '保存成功',
     'llm.saveFailed': '保存失败',
+    'llm.fetchProvidersFailed': '获取LLM提供商列表失败',
+    'llm.fieldRequired': '此字段为必填项',
     
     // Knowledge page
     'knowledge.title': '知识点管理',
@@ -170,6 +172,8 @@ const translations: Translations = {
     'llm.enterApiKey': 'Please enter API key',
     'llm.saveSuccess': 'Saved successfully',
     'llm.saveFailed': 'Save failed',
+    'llm.fetchProvidersFailed': 'Failed to fetch LLM providers',
+    'llm.fieldRequired': 'This field is required',
     
     // Knowledge page
     'knowledge.title': 'Knowledge Management',
@@ -304,6 +308,8 @@ const translations: Translations = {
     'llm.enterApiKey': 'APIキーを入力してください',
     'llm.saveSuccess': '保存に成功しました',
     'llm.saveFailed': '保存に失敗しました',
+    'llm.fetchProvidersFailed': 'LLMプロバイダーの取得に失敗しました',
+    'llm.fieldRequired': 'この項目は必須です',
     
     // Knowledge page
     'knowledge.title': 'ナレッジ管理',
@@ -498,7 +504,11 @@ export function useTranslation() {
     };
   }, []);
   
-  return { t, i18n: I18nService.getInstance() };
+  return { 
+    t, 
+    i18n: I18nService.getInstance(),
+    language: I18nService.getInstance().getLanguage()
+  };
 }
 
 // Import React hooks
