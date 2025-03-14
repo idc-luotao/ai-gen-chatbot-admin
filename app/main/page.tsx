@@ -13,7 +13,7 @@ export default function MainPage() {
   const isAdmin = userType === USER_TYPE_ADMIN;
 
   const handleChatClick = () => {
-    router.push('/chatbot');
+    router.push('/chatbot2');
   };
 
   const handleManageClick = () => {

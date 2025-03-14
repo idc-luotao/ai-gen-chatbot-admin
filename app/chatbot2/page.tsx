@@ -228,7 +228,9 @@ export default function ChatbotPage() {
           response_mode: "streaming",
           conversation_id: conversationId || "",
           user: userName,
-          files: files};
+          files: files,
+          question_type: "1"
+        };
 
         // 使用simpleHttp中的stream方法
         await request.stream(
@@ -247,58 +249,7 @@ export default function ChatbotPage() {
               // 累积完整响应
               fullResponse += streamContent;
 
-              // 检查是否包含表单元素
-              let formElements = null;
-              try {
-                // 尝试从响应中提取JSON表单定义
-                if (streamContent.includes('{{FORM:') && streamContent.includes('}}')) {
-                  const formMatch = streamContent.match(/{{FORM:(.*?)}}/)
-                  if (formMatch && formMatch[1]) {
-                    const formJson = formMatch[1].trim();
-                    formElements = JSON.parse(formJson);
-                    console.log('检测到表单元素:', formElements);
-                  }
-                }
-                // 检查是否包含API参数定义
-                else if (streamContent.includes('{{PARAMS:') && streamContent.includes('}}')) {
-                  const paramsMatch = streamContent.match(/{{PARAMS:(.*?)}}/)
-                  if (paramsMatch && paramsMatch[1]) {
-                    const paramsJson = paramsMatch[1].trim();
-                    const paramsObj = JSON.parse(paramsJson);
-
-                    if (paramsObj.params && Array.isArray(paramsObj.params)) {
-                      // 创建表单元素
-                      formElements = paramsObj.params.map((param: any) => ({
-                        type: param.param_type || 'text',
-                        id: param.api_param_name,
-                        label: param.api_param_name,
-                        placeholder: `请输入${param.api_param_name}`,
-                        value: ''
-                      }));
-
-                      // 添加提交和清除按钮
-                      formElements.push(
-                        {
-                          type: 'button',
-                          id: 'submit',
-                          label: '提交',
-                          action: 'submit:/v1/form-submit'
-                        },
-                        {
-                          type: 'button',
-                          id: 'clear',
-                          label: '清除',
-                          action: 'clear'
-                        }
-                      );
-
-                      console.log('从参数生成表单元素:', formElements);
-                    }
-                  }
-                }
-              } catch (error) {
-                console.error('解析表单元素失败:', error);
-              }
+              
 
               // 更新消息 - 使用函数式更新确保基于最新状态
               setMessages(prev => {
@@ -313,10 +264,7 @@ export default function ChatbotPage() {
                   msg.id === botMessageId
                     ? {
                       ...msg,
-                      content: formElements
-                        ? msg.content + streamContent.replace(/{{FORM:.*?}}/, '').replace(/{{PARAMS:.*?}}/, '')
-                        : msg.content + streamContent,
-                      formElements: formElements || msg.formElements
+                      content: msg.content + streamContent
                     }
                     : msg
                 );
@@ -325,65 +273,6 @@ export default function ChatbotPage() {
               console.log('收到消息结束事件，设置conversation_id');
               conversationId = jsonData.conversation_id
 
-              // 检查完整响应中是否包含表单元素
-              let formElements = null;
-              try {
-                // 尝试从完整响应中提取JSON表单定义
-                if (fullResponse.includes('{{FORM:') && fullResponse.includes('}}')) {
-                  const formMatch = fullResponse.match(/{{FORM:(.*?)}}/)
-                  if (formMatch && formMatch[1]) {
-                    const formJson = formMatch[1].trim();
-                    formElements = JSON.parse(formJson);
-                    console.log('检测到表单元素:', formElements);
-
-                    // 从完整响应中移除表单定义
-                    fullResponse = fullResponse.replace(/{{FORM:.*?}}/, '');
-                  }
-                }
-                // 检查是否包含API参数定义
-                else if (fullResponse.includes('{{PARAMS:') && fullResponse.includes('}}')) {
-                  const paramsMatch = fullResponse.match(/{{PARAMS:(.*?)}}/)
-                  if (paramsMatch && paramsMatch[1]) {
-                    const paramsJson = paramsMatch[1].trim();
-                    const paramsObj = JSON.parse(paramsJson);
-
-                    if (paramsObj.params && Array.isArray(paramsObj.params)) {
-                      // 创建表单元素
-                      formElements = paramsObj.params.map((param: any) => ({
-                        type: param.param_type || 'text',
-                        id: param.api_param_name,
-                        label: param.api_param_name,
-                        placeholder: `请输入${param.api_param_name}`,
-                        value: ''
-                      }));
-
-                      // 添加提交和清除按钮
-                      formElements.push(
-                        {
-                          type: 'button',
-                          id: 'submit',
-                          label: '提交',
-                          action: 'submit:/v1/form-submit'
-                        },
-                        {
-                          type: 'button',
-                          id: 'clear',
-                          label: '清除',
-                          action: 'clear'
-                        }
-                      );
-
-                      console.log('从参数生成表单元素:', formElements);
-                    }
-
-                    // 从完整响应中移除参数定义
-                    fullResponse = fullResponse.replace(/{{PARAMS:.*?}}/, '');
-                  }
-                }
-              } catch (error) {
-                console.error('解析表单元素失败:', error);
-              }
-
               // 更新最终消息
               setMessages(prev =>
                 prev.map(msg =>
@@ -391,8 +280,7 @@ export default function ChatbotPage() {
                     ? {
                       ...msg,
                       content: fullResponse,
-                      isStreaming: false,
-                      formElements: formElements || msg.formElements
+                      isStreaming: false
                     }
                     : msg
                 )
