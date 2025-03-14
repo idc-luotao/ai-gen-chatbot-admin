@@ -6,6 +6,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { ColumnsType } from 'antd/es/table';
 import { User } from '../../types/auth';
 import { request } from '../../utils/http';
+import { useTranslation } from '../../utils/i18n';
 
 interface UserFormData {
   username: string;
@@ -27,46 +28,47 @@ export default function UsersPage() {
   });
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
+  const { t } = useTranslation();
 
   // 表格列定义
   const columns: ColumnsType<User> = [
     {
-      title: '用户ID',
+      title: t('users.userId'),
       dataIndex: 'id',
       key: 'id',
     },
     {
-      title: '用户名',
+      title: t('users.username'),
       dataIndex: 'username',
       key: 'username',
     },
     {
-      title: '头像',
+      title: t('users.avatar'),
       dataIndex: 'avatar_url',
       key: 'avatar_url',
     },
     {
-      title: '邮箱',
+      title: t('users.email'),
       dataIndex: 'email',
       key: 'email',
     },
     {
-      title: '创建时间',
+      title: t('users.createTime'),
       dataIndex: 'created_at',
       key: 'created_at',
     },
     {
-      title: '更新时间',
+      title: t('users.updateTime'),
       dataIndex: 'updated_at',
       key: 'updated_at',
     },
     {
-      title: '操作',
+      title: t('users.actions'),
       key: 'action',
       render: (_, record) => (
         <Space size="middle">
-          <a onClick={() => handleEdit(record)}>编辑</a>
-          <a onClick={() => handleDelete(record)}>删除</a>
+          <a onClick={() => handleEdit(record)}>{t('users.edit')}</a>
+          <a onClick={() => handleDelete(record)}>{t('users.delete')}</a>
         </Space>
       ),
     },
@@ -101,11 +103,11 @@ export default function UsersPage() {
         });
       } else {
         console.error('Invalid response format:', response);
-        message.error('获取用户列表失败：数据格式错误');
+        message.error(t('users.invalidResponse'));
       }
     } catch (error: any) {
       console.error('Fetch users error:', error);
-      message.error(error.response?.data?.message || '获取用户列表失败');
+      message.error(error.response?.data?.message || t('users.fetchFailed'));
     } finally {
       setLoading(false);
     }
@@ -128,8 +130,8 @@ export default function UsersPage() {
     try {
       const values = await form.validateFields();
       Modal.confirm({
-        title: '确认创建用户',
-        content: '确定要创建这个用户吗？',
+        title: t('users.confirmCreate'),
+        content: t('users.confirmCreateContent'),
         onOk: async () => {
           try {
             setLoading(true);
@@ -141,19 +143,19 @@ export default function UsersPage() {
               password: values.password
             });
             
-            message.success('用户创建成功');
+            message.success(t('users.createSuccess'));
             setIsModalOpen(false);
             form.resetFields();
             fetchUsers(); // 刷新用户列表
           } catch (error: any) {
-            message.error(error.response?.data?.message || '创建用户失败');
+            message.error(error.response?.data?.message || t('users.createFailed'));
           } finally {
             setLoading(false);
           }
         }
       });
     } catch (error) {
-      message.error('表单验证失败');
+      message.error(t('users.formValidationFailed'));
     }
   };
 
@@ -177,8 +179,8 @@ export default function UsersPage() {
     try {
       const values = await editForm.validateFields();
       Modal.confirm({
-        title: '确认修改用户',
-        content: '确定要保存这些修改吗？',
+        title: t('users.confirmEdit'),
+        content: t('users.confirmEditContent'),
         onOk: async () => {
           try {
             setLoading(true);
@@ -190,38 +192,36 @@ export default function UsersPage() {
               await request.put(`/console/api/chat-users/${editingUser?.id}`, values);
             }
             
-            message.success('用户修改成功');
+            message.success(t('users.editSuccess'));
             setIsEditModalOpen(false);
             setEditingUser(null);
             editForm.resetFields();
             fetchUsers(); // 刷新用户列表
           } catch (error: any) {
-            message.error(error.response?.data?.message || '修改用户失败');
+            message.error(error.response?.data?.message || t('users.editFailed'));
           } finally {
             setLoading(false);
           }
         }
       });
     } catch (error) {
-      message.error('表单验证失败');
+      message.error(t('users.formValidationFailed'));
     }
   };
 
   const handleDelete = (record: User) => {
     Modal.confirm({
-      title: '确认删除用户',
-      content: `确定要删除用户 "${record.username}" 吗？此操作不可恢复。`,
-      okText: '删除',
+      title: t('users.confirmDelete'),
+      content: t('users.confirmDeleteContent'),
       okType: 'danger',
-      cancelText: '取消',
       onOk: async () => {
         try {
           setLoading(true);
           await request.delete(`/console/api/chat-users/${record.id}`);
-          message.success('用户删除成功');
+          message.success(t('users.deleteSuccess'));
           fetchUsers(); // 刷新用户列表
         } catch (error: any) {
-          message.error(error.response?.data?.message || '删除用户失败');
+          message.error(error.response?.data?.message || t('users.deleteFailed'));
         } finally {
           setLoading(false);
         }
@@ -234,29 +234,33 @@ export default function UsersPage() {
   };
 
   return (
-    <Card
-      title="用户管理"
-      extra={
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAddUser}>
-          添加用户
+    <div style={{ padding: '20px' }}>
+      <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2>{t('users.title')}</h2>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={handleAddUser}
+        >
+          {t('users.addUser')}
         </Button>
-      }
-    >
+      </div>
       <Table
         columns={columns}
         dataSource={users}
         rowKey="id"
         loading={loading}
         pagination={{
-          ...pagination,
+          current: pagination.current,
+          pageSize: pagination.pageSize,
+          total: pagination.total,
+          onChange: handleTableChange,
           showSizeChanger: true,
-          showTotal: (total) => `共 ${total} 条`,
+          showTotal: (total) => t('knowledge.total', { total }),
         }}
-        onChange={handleTableChange}
       />
-
       <Modal
-        title="添加用户"
+        title={t('users.addUser')}
         open={isModalOpen}
         onOk={handleModalOk}
         onCancel={handleModalCancel}
@@ -265,49 +269,38 @@ export default function UsersPage() {
         <Form
           form={form}
           layout="vertical"
-          name="userForm"
         >
           <Form.Item
             name="username"
-            label="用户名"
-            rules={[{ required: true, message: '请输入用户名' }]}
+            label={t('users.username')}
+            rules={[{ required: true, message: t('users.inputUsername') }]}
           >
-            <Input placeholder="请输入用户名" />
+            <Input />
           </Form.Item>
-
-          <Form.Item
-            name="password"
-            label="密码"
-            rules={[
-              { required: true, message: '请输入密码' },
-              { min: 6, message: '密码长度不能小于6位' }
-            ]}
-          >
-            <Input.Password placeholder="请输入密码" />
-          </Form.Item>
-
           <Form.Item
             name="email"
-            label="邮箱"
-            rules={[
-              { required: true, message: '请输入邮箱' },
-              { type: 'email', message: '请输入有效的邮箱地址' }
-            ]}
+            label={t('users.email')}
+            rules={[{ required: true, message: t('users.inputEmail') }]}
           >
-            <Input placeholder="请输入邮箱" />
+            <Input />
           </Form.Item>
-
+          <Form.Item
+            name="password"
+            label={t('users.password')}
+            rules={[{ required: true, message: t('users.inputPassword') }]}
+          >
+            <Input.Password />
+          </Form.Item>
           <Form.Item
             name="avatar_url"
-            label="头像URL"
+            label={`${t('users.avatar')} ${t('users.optional')}`}
           >
-            <Input placeholder="请输入头像URL" />
+            <Input />
           </Form.Item>
         </Form>
       </Modal>
-
       <Modal
-        title="编辑用户"
+        title={t('users.edit')}
         open={isEditModalOpen}
         onOk={handleEditModalOk}
         onCancel={handleEditModalCancel}
@@ -316,45 +309,35 @@ export default function UsersPage() {
         <Form
           form={editForm}
           layout="vertical"
-          name="editUserForm"
         >
           <Form.Item
             name="username"
-            label="用户名"
-            rules={[{ required: true, message: '请输入用户名' }]}
+            label={t('users.username')}
+            rules={[{ required: true, message: t('users.inputUsername') }]}
           >
-            <Input placeholder="请输入用户名" />
+            <Input />
           </Form.Item>
-
-          <Form.Item
-            name="password"
-            label="密码"
-            rules={[
-              { min: 6, message: '密码长度不能小于6位' }
-            ]}
-          >
-            <Input.Password placeholder="请输入密码" />
-          </Form.Item>
-
           <Form.Item
             name="email"
-            label="邮箱"
-            rules={[
-              { required: true, message: '请输入邮箱' },
-              { type: 'email', message: '请输入有效的邮箱地址' }
-            ]}
+            label={t('users.email')}
+            rules={[{ required: true, message: t('users.inputEmail') }]}
           >
-            <Input placeholder="请输入邮箱" />
+            <Input />
           </Form.Item>
-
+          <Form.Item
+            name="password"
+            label={`${t('users.password')} ${t('users.optional')}`}
+          >
+            <Input.Password />
+          </Form.Item>
           <Form.Item
             name="avatar_url"
-            label="头像URL"
+            label={`${t('users.avatar')} ${t('users.optional')}`}
           >
-            <Input placeholder="请输入头像URL" />
+            <Input />
           </Form.Item>
         </Form>
       </Modal>
-    </Card>
+    </div>
   );
 }

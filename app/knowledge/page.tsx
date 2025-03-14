@@ -9,6 +9,7 @@ import { request } from '../../utils/http';
 import moment from 'moment';
 import http from '../../utils/http';
 import { getToken } from '../../utils/storage';
+import { useTranslation } from '../../utils/i18n';
 
 const { Dragger } = Upload;
 
@@ -41,6 +42,7 @@ export default function KnowledgePage() {
   const [uploadedFile, setUploadedFile] = useState<UploadFile | null>(null);
   const [saveLoading, setSaveLoading] = useState(false);
   const [fileId, setFileId] = useState('');
+  const { t } = useTranslation();
 
   const uploadProps = {
     name: 'file',
@@ -59,11 +61,11 @@ export default function KnowledgePage() {
       
       const { status } = info.file;
       if (status === 'done') {
-        message.success(`${info.file.name} 文件上传成功`);
+        message.success(t('knowledge.uploadSuccess'));
         setUploadedFile(info.file);
       } else if (status === 'error') {
         console.error('Upload error:', info.file.error, info.file.response);
-        message.error(`${info.file.name} 文件上传失败: ${info.file.response?.message || '未知错误'}`);
+        message.error(`${info.file.name} ${t('knowledge.uploadFailed')}: ${info.file.response?.message || '未知错误'}`);
         setUploadedFile(null);
       }
     },
@@ -86,27 +88,27 @@ export default function KnowledgePage() {
 
   const columns: ColumnsType<KnowledgeItem> = [
     {
-      title: 'ID',
+      title: t('knowledge.id'),
       dataIndex: 'id',
       key: 'id',
     },
     {
-      title: '标题',
+      title: t('knowledge.title'),
       dataIndex: 'name',
       key: 'name',
     },
     {
-      title: 'LLM',
+      title: t('knowledge.llm'),
       dataIndex: 'embedding_model_provider',
       key: 'embedding_model_provider',
     },
     {
-      title: 'LLM-Model',
+      title: t('knowledge.llmModel'),
       dataIndex: 'embedding_model',
       key: 'embedding_model',
     },
     {
-      title: '创建时间',
+      title: t('knowledge.createTime'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (timestamp: number) => moment.unix(timestamp).format('YYYY-MM-DD HH:mm:ss'),
@@ -126,7 +128,7 @@ export default function KnowledgePage() {
       setData(response.data);
       setTotal(response.total);
     } catch (error) {
-      message.error('获取知识点列表失败');
+      message.error(t('knowledge.fetchFailed'));
     } finally {
       setLoading(false);
     }
@@ -145,7 +147,7 @@ export default function KnowledgePage() {
 
   const handleSave = async () => {
     if (!uploadedFile) {
-      message.error('请先上传文件');
+      message.error(t('knowledge.pleaseUpload'));
       return;
     }
 
@@ -154,7 +156,7 @@ export default function KnowledgePage() {
       request.post('/console/api/datasets/init'
         , {"data_source":{"type":"upload_file","info_list":{"data_source_type":"upload_file","file_info_list":{"file_ids":["be0d08f0-acd8-447c-9dc9-587f43daf895"]}}},"indexing_technique":"high_quality","process_rule":{"rules":{"pre_processing_rules":[{"id":"remove_extra_spaces","enabled":true},{"id":"remove_urls_emails","enabled":false}],"segmentation":{"separator":"\n\n","max_tokens":500,"chunk_overlap":50}},"mode":"custom"},"doc_form":"text_model","doc_language":"Chinese","retrieval_model":{"search_method":"semantic_search","reranking_enable":true,"reranking_model":{"reranking_provider_name":"tongyi","reranking_model_name":"gte-rerank"},"top_k":3,"score_threshold_enabled":false,"score_threshold":0.5},"embedding_model":"text-embedding-v1","embedding_model_provider":"tongyi"})
         .then((res) => {
-          message.success('上传成功');
+          message.success(t('knowledge.saveSuccess'));
           setUploadOpen(false);
           setUploadedFile(null);
           // 刷新列表
@@ -162,14 +164,14 @@ export default function KnowledgePage() {
         })
         .catch((error) => {
           console.error('Save failed:', error);
-          message.error('上传文件失败');
+          message.error(t('knowledge.saveFailed'));
         })
         .finally(() => {
           setSaveLoading(false);
         });
     } catch (error) {
       console.error('Save failed:', error);
-      message.error('上传失败');
+      message.error(t('knowledge.saveFailed'));
     }
   };
 
@@ -186,7 +188,7 @@ export default function KnowledgePage() {
           icon={<UploadOutlined />}
           onClick={() => setUploadOpen(true)}
         >
-          上传文件
+          {t('knowledge.upload')}
         </Button>
       </div>
       <Table<KnowledgeItem>
@@ -198,35 +200,36 @@ export default function KnowledgePage() {
           ...pagination,
           total,
           showSizeChanger: true,
-          showTotal: (total) => `共 ${total} 条`,
+          showTotal: (total) => t('knowledge.total', { total }),
         }}
         onChange={handleTableChange}
       />
       <Modal
-        title="上传文件"
+        title={t('knowledge.upload')}
         open={uploadOpen}
         onCancel={handleCancel}
         footer={[
           <Button key="cancel" onClick={handleCancel}>
-            取消
+            {t('knowledge.cancel')}
           </Button>,
           <Button
             key="save"
             type="primary"
             loading={saveLoading}
             onClick={handleSave}
+            disabled={!uploadedFile}
           >
-            保存
+            {t('knowledge.save')}
           </Button>,
         ]}
       >
-        <Dragger {...uploadProps}>
+        <Dragger {...uploadProps} fileList={uploadedFile ? [uploadedFile] : []}>
           <p className="ant-upload-drag-icon">
             <InboxOutlined />
           </p>
-          <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
+          <p className="ant-upload-text">{t('knowledge.uploadText')}</p>
           <p className="ant-upload-hint">
-            支持单个或批量上传，严禁上传公司内部资料及其他违禁文件
+            {t('knowledge.uploadHint')}
           </p>
         </Dragger>
       </Modal>
