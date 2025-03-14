@@ -3,6 +3,7 @@
 import { Form, Input, Button, Select, Card, message } from 'antd';
 import { useState, useEffect } from 'react';
 import { request } from '../../utils/http';
+import { useTranslation } from '../../utils/i18n';
 
 const { Option } = Select;
 
@@ -14,6 +15,7 @@ interface LLMSettings {
 export default function LLMSettingsPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     // fetchSettings();
@@ -63,10 +65,10 @@ export default function LLMSettingsPage() {
       }
       // 发送请求
       await request.post('/console/api/workspaces/current/model-providers/tongyi', requestData);
-      message.success('保存成功');
+      message.success(t('llm.saveSuccess'));
     } catch (error) {
       console.error('保存LLM设置失败:', error);
-      message.error('保存失败');
+      message.error(t('llm.saveFailed'));
     } finally {
       setLoading(false);
     }
@@ -74,7 +76,7 @@ export default function LLMSettingsPage() {
 
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-      <Card title="LLM模型设置" bordered={false}>
+      <Card title={t('llm.title')} bordered={false}>
         <Form
           form={form}
           layout="vertical"
@@ -86,8 +88,8 @@ export default function LLMSettingsPage() {
         >
           <Form.Item
             name="provider"
-            label="LLM提供商"
-            rules={[{ required: true, message: '请选择LLM提供商' }]}
+            label={t('llm.provider')}
+            rules={[{ required: true, message: t('llm.selectProvider') }]}
           >
             <Select>
             <Option value="tongyi">通义千问</Option>
@@ -97,15 +99,15 @@ export default function LLMSettingsPage() {
 
           <Form.Item
             name="apiKey"
-            label="API密钥"
-            rules={[{ required: true, message: '请输入API密钥' }]}
+            label={t('llm.apiKey')}
+            rules={[{ required: true, message: t('llm.enterApiKey') }]}
           >
-            <Input.Password placeholder="请输入API密钥" />
+            <Input.Password placeholder={t('llm.enterApiKey')} />
           </Form.Item>
 
           <Form.Item>
             <Button type="primary" htmlType="submit" loading={loading}>
-              保存设置
+              {t('llm.save')}
             </Button>
           </Form.Item>
         </Form>

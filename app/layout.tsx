@@ -3,12 +3,14 @@
 import { Layout, Typography, Dropdown, message } from 'antd';
 import { UserOutlined, SettingOutlined, LogoutOutlined } from '@ant-design/icons';
 import SideMenu from '../components/SideMenu';
+import LanguageSelector from '../components/LanguageSelector';
 import { usePathname, useRouter } from 'next/navigation';
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import './globals.css';
 import { request } from '../utils/http';
 import { removeTokens, USER_TYPE_ADMIN } from '../utils/storage';
 import { UserProvider, useUser } from '../contexts/UserContext';
+import { t, useTranslation } from '../utils/i18n';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -20,6 +22,7 @@ function AppLayout({ children }: { children: ReactNode }) {
   const isAdminPage = pathname === '/users' || pathname === '/knowledge' || pathname === '/llm-settings';
   const { userName, userType } = useUser();
   const isAdmin = userType === USER_TYPE_ADMIN;
+  const { t } = useTranslation();
 
   const handleMenuClick = async ({ key }: { key: string }) => {
     if (key === 'settings') {
@@ -40,7 +43,7 @@ function AppLayout({ children }: { children: ReactNode }) {
     {
       key: 'logout',
       icon: <LogoutOutlined />,
-      label: '注销',
+      label: t('admin.logout'),
     },
   ];
 
@@ -68,31 +71,34 @@ function AppLayout({ children }: { children: ReactNode }) {
                 marginRight: '16px'
               }}
             />
-            <Text strong style={{ fontSize: '18px' }}>管理系统</Text>
+            <Text strong style={{ fontSize: '18px' }}>{t('admin.system')}</Text>
           </div>
-          <Dropdown
-            menu={{
-              items: menuItems,
-              onClick: handleMenuClick,
-            }}
-            placement="bottomRight"
-            arrow
-          >
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              cursor: 'pointer',
-              padding: '0 8px',
-              borderRadius: '4px',
-              transition: 'all 0.3s',
-              ':hover': {
-                backgroundColor: 'rgba(0,0,0,0.025)'
-              }
-            }}>
-              <UserOutlined style={{ marginRight: '8px' }} />
-              <Text>{isAdmin ? USER_TYPE_ADMIN : userName}</Text>
-            </div>
-          </Dropdown>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <Dropdown
+              menu={{
+                items: menuItems,
+                onClick: handleMenuClick,
+              }}
+              placement="bottomRight"
+              arrow
+            >
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                cursor: 'pointer',
+                padding: '0 8px',
+                borderRadius: '4px',
+                transition: 'all 0.3s',
+                ':hover': {
+                  backgroundColor: 'rgba(0,0,0,0.025)'
+                }
+              }}>
+                <UserOutlined style={{ marginRight: '8px' }} />
+                <Text>{isAdmin ? USER_TYPE_ADMIN : userName}</Text>
+              </div>
+            </Dropdown>
+            <LanguageSelector />
+          </div>
         </Header>
         <Layout>
           {isAdminPage && (
