@@ -17,7 +17,7 @@ function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const isLoginPage = pathname === '/login';
-  const isAdminPage = pathname === '/users' || pathname === '/knowledge';
+  const isAdminPage = pathname === '/users' || pathname === '/knowledge' || pathname === '/llm-settings';
   const { userName, userType } = useUser();
   const isAdmin = userType === USER_TYPE_ADMIN;
 

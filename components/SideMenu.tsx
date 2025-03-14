@@ -1,7 +1,7 @@
 'use client';
 
 import { Menu } from 'antd';
-import { BookOutlined, UserOutlined } from '@ant-design/icons';
+import { BookOutlined, UserOutlined, SettingOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { MenuProps } from 'antd';
 
@@ -20,6 +20,11 @@ const SideMenu = () => {
       key: 'users',
       icon: <UserOutlined />,
       label: '用户管理',
+    },
+    {
+      key: 'llm-settings',
+      icon: <SettingOutlined />,
+      label: 'LLM设置',
     },
   ];
 
