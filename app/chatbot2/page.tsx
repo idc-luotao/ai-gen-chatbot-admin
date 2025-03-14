@@ -7,6 +7,7 @@ import styles from './page.module.css';
 import { request } from '../../utils/simpleHttp';
 import { getUserName } from '../../utils/storage';
 import { API_TOKEN } from '../../utils/config';
+import { useTranslation } from '../../utils/i18n';
 
 const { Header, Content, Sider } = Layout;
 const { confirm } = Modal;
@@ -40,6 +41,7 @@ interface ChatSession {
 }
 
 export default function ChatbotPage() {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -91,7 +93,7 @@ export default function ChatbotPage() {
       }
     } catch (error) {
       setLoading(false);
-      message.error('获取会话列表失败');
+      message.error(t('chatbot2.fetchConversationsFailed'));
       console.error('Error fetching conversations:', error);
     }
   };
@@ -131,7 +133,7 @@ export default function ChatbotPage() {
         setMessages([]);
       }
     } catch (error) {
-      message.error('获取消息失败');
+      message.error(t('chatbot2.fetchMessagesFailed'));
       console.error('Error fetching messages:', error);
     } finally {
       setLoadingMessages(false);
@@ -188,7 +190,7 @@ export default function ChatbotPage() {
       const botMessage: Message = {
         id: botMessageId,
         type: 'bot',
-        content: '正在思考...',
+        content: t('chatbot2.processing'),
         timestamp: Date.now(),
         isStreaming: true
       };
@@ -249,8 +251,6 @@ export default function ChatbotPage() {
               // 累积完整响应
               fullResponse += streamContent;
 
-              
-
               // 更新消息 - 使用函数式更新确保基于最新状态
               setMessages(prev => {
                 // 查找当前机器人消息
@@ -262,10 +262,7 @@ export default function ChatbotPage() {
                 // 创建新的消息列表，替换机器人消息
                 return prev.map(msg =>
                   msg.id === botMessageId
-                    ? {
-                      ...msg,
-                      content: msg.content + streamContent
-                    }
+                    ? { ...msg, content: msg.content + streamContent }
                     : msg
                 );
               });
@@ -342,12 +339,12 @@ export default function ChatbotPage() {
             setMessages(prev =>
               prev.map(msg =>
                 msg.id === botMessageId
-                  ? { ...msg, content: '获取回复失败，请重试', isStreaming: false }
+                  ? { ...msg, content: t('chatbot2.getReplyFailed'), isStreaming: false }
                   : msg
               )
             );
 
-            message.error('获取回复失败');
+            message.error(t('chatbot2.getReplyFailed'));
           },
           // 开始回调 - 清空"正在思考..."
           () => {
@@ -363,26 +360,26 @@ export default function ChatbotPage() {
 
       } catch (error) {
         setIsStreaming(false);
-        message.error('获取回复失败');
+        message.error(t('chatbot2.getReplyFailed'));
         console.error('Error streaming response:', error);
 
         // 移除空的机器人消息或标记为错误
         setMessages(prev =>
           prev.map(msg =>
             msg.id === botMessageId
-              ? { ...msg, content: '获取回复失败，请重试', isStreaming: false }
+              ? { ...msg, content: t('chatbot2.getReplyFailed'), isStreaming: false }
               : msg
           )
         );
       }
     } catch (error) {
-      message.error('发送消息失败');
+      message.error(t('chatbot2.sendMessageFailed'));
       console.error('Error sending message:', error);
     }
   };
 
   const handleNewChat = () => {
-    setSessions(prev => [{ id: 'empty', title: 'New conversation', lastMessage: '', timestamp: Date.now() }, ...prev]);
+    setSessions(prev => [{ id: 'empty', title: t('chatbot2.newConversation'), lastMessage: '', timestamp: Date.now() }, ...prev]);
     setSelectedSession('empty');
     setMessages([]);
   };
@@ -399,12 +396,12 @@ export default function ChatbotPage() {
 
     // 如果是最近7天的消息，显示星期几
     if (diff < 7 * 24 * 60 * 60 * 1000) {
-      const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+      const days = [t('chatbot2.sunday'), t('chatbot2.monday'), t('chatbot2.tuesday'), t('chatbot2.wednesday'), t('chatbot2.thursday'), t('chatbot2.friday'), t('chatbot2.saturday')];
       return days[date.getDay()];
     }
 
     // 其他情况显示日期
-    return `${date.getMonth() + 1}月${date.getDate()}日`;
+    return `${date.getMonth() + 1}${t('chatbot2.month')}${date.getDate()}${t('chatbot2.day')}`;
   };
 
   // 处理表单元素操作
@@ -481,7 +478,7 @@ export default function ChatbotPage() {
     const botMessage: Message = {
       id: botMessageId,
       type: 'bot',
-      content: '处理表单数据中...',
+      content: t('chatbot2.processingFormData'),
       timestamp: Date.now(),
       isStreaming: true
     };
@@ -578,7 +575,7 @@ export default function ChatbotPage() {
       type: param.param_type,
       id: param.api_param_name,
       label: param.api_param_name, // 使用参数名作为标签
-      placeholder: `请输入${param.api_param_name}`,
+      placeholder: `${t('chatbot2.pleaseEnter')}${param.api_param_name}`,
       value: ''
     }));
 
@@ -587,13 +584,13 @@ export default function ChatbotPage() {
       {
         type: 'button',
         id: 'submit',
-        label: '提交',
+        label: t('chatbot2.submit'),
         action: `submit:${submitEndpoint}`
       },
       {
         type: 'button',
         id: 'clear',
-        label: '清除',
+        label: t('chatbot2.clear'),
         action: 'clear'
       }
     );
@@ -602,7 +599,7 @@ export default function ChatbotPage() {
     const botMessage: Message = {
       id: botMessageId,
       type: 'bot',
-      content: '请填写以下参数:',
+      content: t('chatbot2.fillParams'),
       timestamp: Date.now(),
       formElements: formElements as any
     };
@@ -625,7 +622,7 @@ export default function ChatbotPage() {
           }
         }
       )
-      generateFormFromParams(res1.data.params, '/v1/api/workflow/start');
+      generateFormFromParams(res1.data.params, '');
     } catch (error) {
       console.error('获取参数失败:', error);
     }
@@ -659,42 +656,42 @@ export default function ChatbotPage() {
     const botMessage: Message = {
       id: botMessageId,
       type: 'bot',
-      content: '请填写以下信息:',
+      content: t('chatbot2.fillParams'),
       timestamp: Date.now(),
       formElements: [
         {
           type: 'text',
           id: 'name',
-          label: '申請タイプ',
-          placeholder: '申請タイプを入力してください'
+          label: t('chatbot2.applicationType'),
+          placeholder: t('chatbot2.pleaseEnterApplicationType')
         },
         {
           type: 'text',
           id: 'email',
-          label: '邮箱',
-          placeholder: '请输入您的邮箱'
+          label: t('chatbot2.email'),
+          placeholder: t('chatbot2.pleaseEnterEmail')
         },
         {
           type: 'select',
           id: 'department',
-          label: '部门',
+          label: t('chatbot2.department'),
           options: [
-            { label: '请选择部门', value: '' },
-            { label: '技术部', value: 'tech' },
-            { label: '市场部', value: 'marketing' },
-            { label: '人力资源', value: 'hr' }
+            { label: t('chatbot2.selectDepartment'), value: '' },
+            { label: t('chatbot2.techDepartment'), value: 'tech' },
+            { label: t('chatbot2.marketingDepartment'), value: 'marketing' },
+            { label: t('chatbot2.hrDepartment'), value: 'hr' }
           ]
         },
         {
           type: 'button',
           id: 'submit',
-          label: '提交',
+          label: t('chatbot2.submit'),
           action: 'submit:/v1/form-submit'
         },
         {
           type: 'button',
           id: 'clear',
-          label: '清除',
+          label: t('chatbot2.clear'),
           action: 'clear'
         }
       ]
@@ -713,7 +710,7 @@ export default function ChatbotPage() {
             onClick={handleNewChat}
             className={styles.newChatButton}
           >
-            新建对话
+            {t('chatbot2.newChat')}
           </Button>
         </div>
         <List
@@ -735,11 +732,11 @@ export default function ChatbotPage() {
 
                   // 显示确认对话框
                   confirm({
-                    title: '确认删除',
+                    title: t('chatbot2.deleteConfirm'),
                     icon: <ExclamationCircleOutlined />,
-                    content: '确定要删除这个会话吗？此操作不可恢复。',
-                    okText: '确认',
-                    cancelText: '取消',
+                    content: t('chatbot2.deleteConfirmContent'),
+                    okText: t('chatbot2.confirm'),
+                    cancelText: t('chatbot2.cancel'),
                     onOk: async () => {
                       try {
                         const userName = getUserName();
@@ -761,9 +758,9 @@ export default function ChatbotPage() {
                           setMessages([]);
                         }
 
-                        message.success('删除成功');
+                        message.success(t('chatbot2.deleteSuccess'));
                       } catch (error) {
-                        message.error('删除失败');
+                        message.error(t('chatbot2.deleteFailed'));
                         console.error('Error deleting conversation:', error);
                       }
                     }
@@ -780,7 +777,7 @@ export default function ChatbotPage() {
             <>
               <div className={styles.messageList}>
                 {loadingMessages ? (
-                  <div className={styles.loadingMessages}>加载消息中...</div>
+                  <div className={styles.loadingMessages}>{t('chatbot2.loadingMessages')}</div>
                 ) : messages.length > 0 ? (
                   messages.map((msg) => (
                     <div
@@ -793,14 +790,14 @@ export default function ChatbotPage() {
                             size={32}
                             style={{ backgroundColor: '#1677ff' }}
                           >
-                            用户
+                            {t('chatbot2.user')}
                           </Avatar>
                           <div className={styles.messageContent}>
                             <div className={styles.messageText}>{msg.content}</div>
                             {msg.fileInfo && (
                               <div className={styles.fileInfo}>
-                                <div className={styles.fileName}>文件名: {msg.fileInfo.fileName}</div>
-                                <div className={styles.fileId}>文件ID: {msg.fileInfo.fileId}</div>
+                                <div className={styles.fileName}>{t('chatbot2.fileName')} {msg.fileInfo.fileName}</div>
+                                <div className={styles.fileId}>{t('chatbot2.fileId')} {msg.fileInfo.fileId}</div>
                               </div>
                             )}
                             <div className={styles.messageTime}>
@@ -814,7 +811,7 @@ export default function ChatbotPage() {
                             size={32}
                             style={{ backgroundColor: '#1677ff' }}
                           >
-                            AI
+                            {t('chatbot2.ai')}
                           </Avatar>
                           <div className={styles.messageContent}>
                             <div className={styles.messageText}>
@@ -884,7 +881,7 @@ export default function ChatbotPage() {
                   ))
                 ) : (
                   <div className={styles.emptyMessages}>
-                    <Empty description="暂无消息" />
+                    <Empty description={t('chatbot2.noMessages')} />
                   </div>
                 )}
                 <div ref={messagesEndRef} />
@@ -898,7 +895,7 @@ export default function ChatbotPage() {
                         try {
                           // 显示上传中提示
                           const uploadingKey = `uploading-${Date.now()}`;
-                          message.loading({ content: `正在上传文件: ${file.name}...`, key: uploadingKey });
+                          message.loading({ content: `${t('chatbot2.uploadingFile')} ${file.name}...`, key: uploadingKey });
 
                           // 使用simpleHttp的uploadFile方法上传文件
                           const token = API_TOKEN;
@@ -910,7 +907,7 @@ export default function ChatbotPage() {
                             userName,
                             (percent) => {
                               message.loading({
-                                content: `正在上传文件: ${file.name}... ${percent}%`,
+                                content: `${t('chatbot2.uploadingFile')} ${file.name}... ${percent}%`,
                                 key: uploadingKey
                               });
                             }
@@ -927,12 +924,12 @@ export default function ChatbotPage() {
 
                           // 显示成功消息
                           message.success({
-                            content: `${file.name} 上传成功，文件ID: ${data.id}`,
+                            content: `${file.name} ${t('chatbot2.uploadSuccess')} ${data.id}`,
                             key: uploadingKey
                           });
                         } catch (error) {
-                          console.error('文件上传失败:', error);
-                          message.error(`文件上传失败: ${error.message}`);
+                          console.error(t('chatbot2.uploadFailed'), error);
+                          message.error(`${t('chatbot2.uploadFailed')} ${error.message}`);
                         }
 
                         // 阻止默认上传行为
@@ -942,7 +939,7 @@ export default function ChatbotPage() {
                       <Button
                         icon={<PaperClipOutlined />}
                         type="text"
-                        title="上传文件"
+                        title={t('chatbot2.uploadFile')}
                         disabled={!!uploadedFile}
                       />
                     </Upload>
@@ -950,21 +947,21 @@ export default function ChatbotPage() {
                       <Button
                         type="text"
                         icon={<DeleteOutlined />}
-                        title="取消上传"
+                        title={t('chatbot2.cancelUpload')}
                         onClick={() => setUploadedFile(null)}
                       />
                     )}
                   </div>
                   {uploadedFile ? (
                     <div className={styles.fileInfoInput}>
-                      <div className={styles.fileName}>文件名: {uploadedFile.fileName}</div>
-                      <div className={styles.fileId}>文件ID: {uploadedFile.fileId}</div>
+                      <div className={styles.fileName}>{t('chatbot2.fileName')} {uploadedFile.fileName}</div>
+                      <div className={styles.fileId}>{t('chatbot2.fileId')} {uploadedFile.fileId}</div>
                     </div>
                   ) : (
                     <Input.TextArea
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
-                      placeholder="输入消息..."
+                      placeholder={t('chatbot2.inputMessage')}
                       autoSize={{ minRows: 1, maxRows: 4 }}
                       onPressEnter={(e) => {
                         if (!e.shiftKey) {
@@ -982,23 +979,14 @@ export default function ChatbotPage() {
                       disabled={isStreaming}
                       icon={<SendOutlined />}
                     >
-                      发送
+                      {t('chatbot2.send')}
                     </Button>
-                    {/* 添加测试表单按钮 */}
-                    {/* <Button
-                      onClick={addExampleForm}
-                      style={{ marginLeft: '8px' }}
-                      disabled={isStreaming}
-                    >
-                      测试表单
-                    </Button> */}
-                    {/* 添加测试JSON参数表单按钮 */}
                     <Button
                       onClick={testGenerateForm}
                       style={{ marginLeft: '8px' }}
                       disabled={isStreaming}
                     >
-                      测试JSON表单
+                      {t('chatbot2.testJsonForm')}
                     </Button>
                   </div>
                 </div>
@@ -1008,7 +996,7 @@ export default function ChatbotPage() {
             <>
               <div className={styles.messageList}>
                 <div className={styles.emptyMessages}>
-                  <Empty description="新建对话" />
+                  <Empty description={t('chatbot2.newChat')} />
                 </div>
                 <div ref={messagesEndRef} />
               </div>
@@ -1021,7 +1009,7 @@ export default function ChatbotPage() {
                         try {
                           // 显示上传中提示
                           const uploadingKey = `uploading-${Date.now()}`;
-                          message.loading({ content: `正在上传文件: ${file.name}...`, key: uploadingKey });
+                          message.loading({ content: `${t('chatbot2.uploadingFile')} ${file.name}...`, key: uploadingKey });
 
                           // 使用simpleHttp的uploadFile方法上传文件
                           const token = API_TOKEN;
@@ -1033,7 +1021,7 @@ export default function ChatbotPage() {
                             userName,
                             (percent) => {
                               message.loading({
-                                content: `正在上传文件: ${file.name}... ${percent}%`,
+                                content: `${t('chatbot2.uploadingFile')} ${file.name}... ${percent}%`,
                                 key: uploadingKey
                               });
                             }
@@ -1050,12 +1038,12 @@ export default function ChatbotPage() {
 
                           // 显示成功消息
                           message.success({
-                            content: `${file.name} 上传成功，文件ID: ${data.id}`,
+                            content: `${file.name} ${t('chatbot2.uploadSuccess')} ${data.id}`,
                             key: uploadingKey
                           });
                         } catch (error) {
-                          console.error('文件上传失败:', error);
-                          message.error(`文件上传失败: ${error.message}`);
+                          console.error(t('chatbot2.uploadFailed'), error);
+                          message.error(`${t('chatbot2.uploadFailed')} ${error.message}`);
                         }
 
                         // 阻止默认上传行为
@@ -1065,7 +1053,7 @@ export default function ChatbotPage() {
                       <Button
                         icon={<PaperClipOutlined />}
                         type="text"
-                        title="上传文件"
+                        title={t('chatbot2.uploadFile')}
                         disabled={!!uploadedFile}
                       />
                     </Upload>
@@ -1073,21 +1061,21 @@ export default function ChatbotPage() {
                       <Button
                         type="text"
                         icon={<DeleteOutlined />}
-                        title="取消上传"
+                        title={t('chatbot2.cancelUpload')}
                         onClick={() => setUploadedFile(null)}
                       />
                     )}
                   </div>
                   {uploadedFile ? (
                     <div className={styles.fileInfoInput}>
-                      <div className={styles.fileName}>文件名: {uploadedFile.fileName}</div>
-                      <div className={styles.fileId}>文件ID: {uploadedFile.fileId}</div>
+                      <div className={styles.fileName}>{t('chatbot2.fileName')} {uploadedFile.fileName}</div>
+                      <div className={styles.fileId}>{t('chatbot2.fileId')} {uploadedFile.fileId}</div>
                     </div>
                   ) : (
                     <Input.TextArea
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
-                      placeholder="输入消息开始新对话..."
+                      placeholder={t('chatbot2.inputMessageForNewChat')}
                       autoSize={{ minRows: 1, maxRows: 4 }}
                       onPressEnter={(e) => {
                         if (!e.shiftKey) {
@@ -1105,7 +1093,7 @@ export default function ChatbotPage() {
                       disabled={isStreaming}
                       icon={<SendOutlined />}
                     >
-                      发送
+                      {t('chatbot2.send')}
                     </Button>
                   </div>
                 </div>
