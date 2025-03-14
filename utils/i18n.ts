@@ -1,6 +1,6 @@
 // Simple i18n implementation without external dependencies
 
-export type Language = 'zh' | 'en';
+export type Language = 'zh' | 'en' | 'ja';
 
 export interface Translations {
   [key: string]: {
@@ -77,6 +77,40 @@ const translations: Translations = {
     'knowledge.save': 'Save',
     'knowledge.uploadText': 'Click or drag files to this area to upload',
     'knowledge.uploadHint': 'Support single or batch upload, it is strictly forbidden to upload company internal materials and other prohibited files',
+  },
+  ja: {
+    // Header
+    'admin.system': '管理システム',
+    'admin.logout': 'ログアウト',
+    'admin.language': '言語',
+    
+    // Main page
+    'main.title': 'AIアシスタント',
+    'main.description': '私たちのAIアシスタントシステムへようこそ。これは、質問に答え、提案を提供し、さまざまなタスクを完了するのに役立つ強力な人工知能対話システムです。会話を直接開始するか、管理バックエンドに入ってシステムパラメータとナレッジベースを設定することができます。',
+    'main.startChat': '会話を開始',
+    'main.systemManage': 'システム管理',
+    
+    // Sidebar
+    'sidebar.knowledge': 'ナレッジ管理',
+    'sidebar.users': 'ユーザー管理',
+    'sidebar.llmSettings': 'LLM設定',
+    
+    // LLM Settings
+    'llm.title': 'LLMモデル設定',
+    'llm.provider': 'LLMプロバイダー',
+    'llm.apiKey': 'APIキー',
+    'llm.save': '設定を保存',
+    'llm.selectProvider': 'LLMプロバイダーを選択してください',
+    'llm.enterApiKey': 'APIキーを入力してください',
+    'llm.saveSuccess': '保存に成功しました',
+    'llm.saveFailed': '保存に失敗しました',
+    
+    // Knowledge page
+    'knowledge.upload': 'ファイルをアップロード',
+    'knowledge.cancel': 'キャンセル',
+    'knowledge.save': '保存',
+    'knowledge.uploadText': 'クリックまたはファイルをこの領域にドラッグしてアップロード',
+    'knowledge.uploadHint': '単一またはバッチアップロードをサポートしています。会社の内部資料やその他の禁止ファイルのアップロードは厳禁です',
   }
 };
 
@@ -89,13 +123,13 @@ export class I18nService {
   private constructor() {
     // Initialize with browser language if possible
     const browserLang = navigator.language.split('-')[0] as Language;
-    if (browserLang === 'en' || browserLang === 'zh') {
+    if (browserLang === 'en' || browserLang === 'zh' || browserLang === 'ja') {
       this.currentLanguage = browserLang;
     }
     
     // Try to load from localStorage
     const savedLang = localStorage.getItem('language') as Language;
-    if (savedLang === 'en' || savedLang === 'zh') {
+    if (savedLang === 'en' || savedLang === 'zh' || savedLang === 'ja') {
       this.currentLanguage = savedLang;
     }
   }

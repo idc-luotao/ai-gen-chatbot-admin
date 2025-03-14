@@ -24,6 +24,7 @@ const LanguageSelector = () => {
       >
         <Option value="zh">中文</Option>
         <Option value="en">English</Option>
+        <Option value="ja">日本語</Option>
       </Select>
     </div>
   );
