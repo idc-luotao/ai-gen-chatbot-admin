@@ -889,6 +889,7 @@ export default function ChatbotPage() {
               <div className={styles.inputArea}>
                 <div className={styles.inputWrapper}>
                   <div className={styles.inputActions}>
+                    {/* 
                     <Upload
                       showUploadList={false}
                       beforeUpload={async (file) => {
@@ -951,6 +952,7 @@ export default function ChatbotPage() {
                         onClick={() => setUploadedFile(null)}
                       />
                     )}
+                    */}
                   </div>
                   {uploadedFile ? (
                     <div className={styles.fileInfoInput}>
@@ -1003,6 +1005,7 @@ export default function ChatbotPage() {
               <div className={styles.inputArea}>
                 <div className={styles.inputWrapper}>
                   <div className={styles.inputActions}>
+                    {/* 
                     <Upload
                       showUploadList={false}
                       beforeUpload={async (file) => {
@@ -1065,13 +1068,8 @@ export default function ChatbotPage() {
                         onClick={() => setUploadedFile(null)}
                       />
                     )}
+                    */}
                   </div>
-                  {uploadedFile ? (
-                    <div className={styles.fileInfoInput}>
-                      <div className={styles.fileName}>{t('chatbot2.fileName')} {uploadedFile.fileName}</div>
-                      <div className={styles.fileId}>{t('chatbot2.fileId')} {uploadedFile.fileId}</div>
-                    </div>
-                  ) : (
                     <Input.TextArea
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
@@ -1084,7 +1082,6 @@ export default function ChatbotPage() {
                         }
                       }}
                     />
-                  )}
                   <div className={styles.sendButton}>
                     <Button
                       type="primary"
