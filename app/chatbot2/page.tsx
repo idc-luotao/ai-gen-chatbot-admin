@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Layout, List, Input, Button, Avatar, Empty, Upload, message, Modal } from 'antd';
-import { SendOutlined, DeleteOutlined, PlusOutlined, PaperClipOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { Layout, List, Input, Button, Avatar, Empty, Upload, message, Modal, Dropdown } from 'antd';
+import { SendOutlined, DeleteOutlined, PlusOutlined, PaperClipOutlined, ExclamationCircleOutlined, EditOutlined, MoreOutlined } from '@ant-design/icons';
 import styles from './page.module.css';
 import { request } from '../../utils/simpleHttp';
 import { getUserName } from '../../utils/storage';
@@ -700,6 +700,23 @@ export default function ChatbotPage() {
     setMessages(prev => [...prev, botMessage]);
   };
 
+  const handleRenameSession = (sessionId: string, newTitle: string) => {
+    try {
+      const userName = getUserName();
+      const token = API_TOKEN as string; // 从配置文件获取 token
+      const url = `/v1/conversations/${sessionId}`;
+
+      request.put(url, token, { name: newTitle, user: userName });
+
+      // 更新会话标题
+      setSessions(prev => prev.map(session => session.id === sessionId ? { ...session, title: newTitle } : session));
+      message.success(t('chatbot2.renameSuccess'));
+    } catch (error) {
+      message.error(t('chatbot2.renameFailed'));
+      console.error('Error renaming conversation:', error);
+    }
+  };
+
   return (
     <Layout className={styles.pageContainer}>
       <Sider width={300} className={styles.sider}>
@@ -723,50 +740,74 @@ export default function ChatbotPage() {
               onClick={() => setSelectedSession(session.id)}
             >
               <div className={styles.sessionTitle}>{session.title}</div>
-              <Button
-                type="text"
-                icon={<DeleteOutlined />}
-                className={styles.deleteButton}
-                onClick={(e) => {
-                  e.stopPropagation();
-
-                  // 显示确认对话框
-                  confirm({
-                    title: t('chatbot2.deleteConfirm'),
-                    icon: <ExclamationCircleOutlined />,
-                    content: t('chatbot2.deleteConfirmContent'),
-                    okText: t('chatbot2.confirm'),
-                    cancelText: t('chatbot2.cancel'),
-                    onOk: async () => {
-                      try {
-                        const userName = getUserName();
-                        const token = API_TOKEN as string; // 从配置文件获取 token
-                        // 使用 DELETE 请求，并在请求体中传递 user 参数
-                        if (session.id !== 'empty') {
-                          await request.delete(
-                            `/v1/conversations/${session.id}`,
-                            token,
-                            { user: userName }
-                          );
+              <Dropdown
+                menu={{
+                  items: [
+                    {
+                      key: 'rename',
+                      icon: <EditOutlined />,
+                      onClick: (e) => {
+                        e.domEvent.stopPropagation();
+                        const newTitle = prompt(t('chatbot2.enterNewTitle') || 'Enter new title');
+                        if (newTitle) {
+                          handleRenameSession(session.id, newTitle);
                         }
-                        // 从列表中移除
-                        setSessions(prev => prev.filter(s => s.id !== session.id));
+                      }
+                    },
+                    {
+                      key: 'delete',
+                      icon: <DeleteOutlined />,
+                      onClick: (e) => {
+                        e.domEvent.stopPropagation();
+                        // 显示确认对话框
+                        confirm({
+                          title: t('chatbot2.deleteConfirm'),
+                          icon: <ExclamationCircleOutlined />,
+                          content: t('chatbot2.deleteConfirmContent'),
+                          okText: t('chatbot2.confirm'),
+                          cancelText: t('chatbot2.cancel'),
+                          onOk: async () => {
+                            try {
+                              const userName = getUserName();
+                              const token = API_TOKEN as string; // 从配置文件获取 token
+                              // 使用 DELETE 请求，并在请求体中传递 user 参数
+                              if (session.id !== 'empty') {
+                                await request.delete(
+                                  `/v1/conversations/${session.id}`,
+                                  token,
+                                  { user: userName }
+                                );
+                              }
+                              // 从列表中移除
+                              setSessions(prev => prev.filter(s => s.id !== session.id));
 
-                        // 如果删除的是当前选中的会话，清空选择
-                        if (selectedSession === session.id) {
-                          setSelectedSession(null);
-                          setMessages([]);
-                        }
+                              // 如果删除的是当前选中的会话，清空选择
+                              if (selectedSession === session.id) {
+                                setSelectedSession(null);
+                                setMessages([]);
+                              }
 
-                        message.success(t('chatbot2.deleteSuccess'));
-                      } catch (error) {
-                        message.error(t('chatbot2.deleteFailed'));
-                        console.error('Error deleting conversation:', error);
+                              message.success(t('chatbot2.deleteSuccess'));
+                            } catch (error) {
+                              message.error(t('chatbot2.deleteFailed'));
+                              console.error('Error deleting conversation:', error);
+                            }
+                          }
+                        });
                       }
                     }
-                  });
+                  ]
                 }}
-              />
+                trigger={['click']}
+                placement="bottomRight"
+              >
+                <Button
+                  type="text"
+                  icon={<MoreOutlined />}
+                  className={styles.moreButton}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </Dropdown>
             </List.Item>
           )}
         />
@@ -983,7 +1024,6 @@ export default function ChatbotPage() {
                     >
                       {t('chatbot2.send')}
                     </Button>
-                    {/* 
                     <Button
                       onClick={testGenerateForm}
                       style={{ marginLeft: '8px' }}
@@ -991,7 +1031,6 @@ export default function ChatbotPage() {
                     >
                       {t('chatbot2.testJsonForm')}
                     </Button>
-                    */}
                   </div>
                 </div>
               </div>
