@@ -983,6 +983,7 @@ export default function ChatbotPage() {
                     >
                       {t('chatbot2.send')}
                     </Button>
+                    {/* 
                     <Button
                       onClick={testGenerateForm}
                       style={{ marginLeft: '8px' }}
@@ -990,6 +991,7 @@ export default function ChatbotPage() {
                     >
                       {t('chatbot2.testJsonForm')}
                     </Button>
+                    */}
                   </div>
                 </div>
               </div>
