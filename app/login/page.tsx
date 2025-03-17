@@ -5,7 +5,7 @@ import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
 import { request } from '../../utils/http';
-import { setToken, setRefreshToken, setUserType, setUserName, USER_TYPE_ADMIN, USER_TYPE_COMMON } from '../../utils/storage';
+import { setToken, setRefreshToken, setUserType, setUserName, USER_TYPE_ADMIN, USER_TYPE_COMMON, setAppToken } from '../../utils/storage';
 import { useUser } from '../../contexts/UserContext';
 import axios from 'axios';
 
@@ -48,6 +48,7 @@ export default function LoginPage() {
           setUserType(loginResponse.data.user_type);
           setUserName(USER_TYPE_ADMIN);  
           setUserInfo(loginResponse.username, USER_TYPE_ADMIN);
+          // setAppToken(loginResponse.app_token);
           router.replace('/main');
         } else {
           message.error('登录失败，请检查邮箱和密码');
@@ -73,6 +74,7 @@ export default function LoginPage() {
           setUserType(loginResponse.data.user_type);
           setUserName(loginResponse.username);  
           setUserInfo(loginResponse.username, USER_TYPE_COMMON);
+          setAppToken(loginResponse.app_token);
           router.replace('/main');
         } else {
           message.error('登录失败，请检查邮箱和密码');

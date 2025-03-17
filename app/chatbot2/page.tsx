@@ -5,7 +5,7 @@ import { Layout, List, Input, Button, Avatar, Empty, Upload, message, Modal, Dro
 import { SendOutlined, DeleteOutlined, PlusOutlined, PaperClipOutlined, ExclamationCircleOutlined, EditOutlined, MoreOutlined } from '@ant-design/icons';
 import styles from './page.module.css';
 import { request } from '../../utils/simpleHttp';
-import { getUserName } from '../../utils/storage';
+import { getAppToken, getUserName } from '../../utils/storage';
 import { API_TOKEN } from '../../utils/config';
 import { useTranslation } from '../../utils/i18n';
 
@@ -70,7 +70,7 @@ export default function ChatbotPage() {
   const fetchConversations = async () => {
     try {
       const userName = getUserName();
-      const token = API_TOKEN as string; // 从配置文件获取 token
+      const token = getAppToken();// 从配置文件获取 token
       const url = `/v1/conversations?last_id=&limit=20&user=${userName}`;
 
       setLoading(true);
@@ -103,7 +103,7 @@ export default function ChatbotPage() {
     try {
       setLoadingMessages(true);
       const userName = getUserName();
-      const token = API_TOKEN; // 从配置文件获取 token
+      const token = getAppToken(); // 从配置文件获取 token
       const url = `/v1/messages?conversation_id=${conversationId}&user=${userName}`;
 
       const response = await request.get(url, token);
@@ -173,7 +173,7 @@ export default function ChatbotPage() {
 
     try {
       const userName = getUserName();
-      const token = API_TOKEN; // 从配置文件获取 token
+      const token = getAppToken(); // 从配置文件获取 token
 
       // 如果没有选中的会话，先创建一个新会话
       let conversationId = selectedSession;
@@ -420,7 +420,7 @@ export default function ChatbotPage() {
   // 处理表单提交
   const handleFormSubmit = async (submitTo: string, formData: Record<string, string>) => {
 
-    const token = API_TOKEN as string;
+    const token = getAppToken();
     const userName = getUserName();
 
     // // 创建一个新的用户消息，显示提交的表单数据
@@ -703,10 +703,10 @@ export default function ChatbotPage() {
   const handleRenameSession = (sessionId: string, newTitle: string) => {
     try {
       const userName = getUserName();
-      const token = API_TOKEN as string; // 从配置文件获取 token
-      const url = `/v1/conversations/${sessionId}`;
+      const token = getAppToken(); // 从配置文件获取 token
+      const url = `/v1/conversations/${sessionId}/name`;
 
-      request.put(url, token, { name: newTitle, user: userName });
+      request.post(url, token, { name: newTitle, user: userName });
 
       // 更新会话标题
       setSessions(prev => prev.map(session => session.id === sessionId ? { ...session, title: newTitle } : session));
@@ -769,7 +769,7 @@ export default function ChatbotPage() {
                           onOk: async () => {
                             try {
                               const userName = getUserName();
-                              const token = API_TOKEN as string; // 从配置文件获取 token
+                              const token = getAppToken(); // 从配置文件获取 token
                               // 使用 DELETE 请求，并在请求体中传递 user 参数
                               if (session.id !== 'empty') {
                                 await request.delete(
@@ -1024,6 +1024,7 @@ export default function ChatbotPage() {
                     >
                       {t('chatbot2.send')}
                     </Button>
+                    {/* 
                     <Button
                       onClick={testGenerateForm}
                       style={{ marginLeft: '8px' }}
@@ -1031,6 +1032,7 @@ export default function ChatbotPage() {
                     >
                       {t('chatbot2.testJsonForm')}
                     </Button>
+                    */}
                   </div>
                 </div>
               </div>

@@ -1,5 +1,6 @@
 import { TokenPayload } from '../types/auth';
 
+const APP_TOKEN_KEY = 'app_access_token';
 const TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
 
@@ -39,6 +40,11 @@ export const setUserName = (userName: string): void => {
   localStorage.setItem(USER_NAME, userName);
 };
 
+export const setAppToken = (token: string): void => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(APP_TOKEN_KEY, token);
+};
+
 export const getUserType = (): string | null => {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem(USER_TYPE);
@@ -47,6 +53,11 @@ export const getUserType = (): string | null => {
 export const getUserName = (): string | null => {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem(USER_NAME);
+};
+
+export const getAppToken = (): string => {
+  if (typeof window === 'undefined') return '';
+  return localStorage.getItem(APP_TOKEN_KEY) || '';
 };
 
 export const removeTokens = (): void => {
