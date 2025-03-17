@@ -287,6 +287,17 @@ export default function ChatbotPage() {
                 if (prev === conversationId) return prev;
                 return conversationId;
               });
+              sessions.forEach(session => {
+                console.log('更新会话:', session);
+              });
+              // 更新empty会话的ID为新的conversationId
+              if (conversationId) { // 确保conversationId不为null
+                setSessions(prevSessions => 
+                  prevSessions.map(session => 
+                    session.id === 'empty' ? { ...session, id: conversationId } : session
+                  )
+                );
+              }
             }
           },
           // 完成回调
@@ -743,7 +754,7 @@ export default function ChatbotPage() {
               <Dropdown
                 menu={{
                   items: [
-                    {
+                    ...(session.id !== 'empty' ? [{
                       key: 'rename',
                       icon: <EditOutlined />,
                       onClick: (e) => {
@@ -753,7 +764,7 @@ export default function ChatbotPage() {
                           handleRenameSession(session.id, newTitle);
                         }
                       }
-                    },
+                    }] : []),
                     {
                       key: 'delete',
                       icon: <DeleteOutlined />,
