@@ -1,7 +1,7 @@
 'use client';
 
 import { Layout, Typography, Dropdown, message } from 'antd';
-import { UserOutlined, SettingOutlined, LogoutOutlined } from '@ant-design/icons';
+import { UserOutlined, SettingOutlined, LogoutOutlined, HomeOutlined } from '@ant-design/icons';
 import SideMenu from '../components/SideMenu';
 import LanguageSelector from '../components/LanguageSelector';
 import { usePathname, useRouter } from 'next/navigation';
@@ -37,10 +37,17 @@ function AppLayout({ children }: { children: ReactNode }) {
       } catch (error: any) {
         message.error(error.response?.data?.message || '退出登录失败');
       }
+    } else if (key === 'home') {
+      router.push('/main');
     }
   };
 
   const menuItems = [
+    {
+      key: 'home',
+      icon: <HomeOutlined />,
+      label: t('admin.home'),
+    },
     {
       key: 'logout',
       icon: <LogoutOutlined />,

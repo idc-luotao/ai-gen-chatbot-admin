@@ -15,6 +15,7 @@ const translations: Translations = {
     'admin.system': '管理系统',
     'admin.logout': '注销',
     'admin.language': '语言',
+    'admin.home': '主页',
     
     // Main page
     'main.title': 'AI 智能助手',
@@ -151,6 +152,7 @@ const translations: Translations = {
     'admin.system': 'Admin System',
     'admin.logout': 'Logout',
     'admin.language': 'Language',
+    'admin.home': 'Home',
     
     // Main page
     'main.title': 'AI Assistant',
@@ -287,6 +289,7 @@ const translations: Translations = {
     'admin.system': '管理システム',
     'admin.logout': 'ログアウト',
     'admin.language': '言語',
+    'admin.home': 'ホーム',
     
     // Main page
     'main.title': 'AIアシスタント',
