@@ -757,6 +757,7 @@ export default function ChatbotPage() {
                     ...(session.id !== 'empty' ? [{
                       key: 'rename',
                       icon: <EditOutlined />,
+                      label: t('chatbot2.rename'),
                       onClick: (e) => {
                         e.domEvent.stopPropagation();
                         const newTitle = prompt(t('chatbot2.enterNewTitle') || 'Enter new title');
@@ -768,6 +769,7 @@ export default function ChatbotPage() {
                     {
                       key: 'delete',
                       icon: <DeleteOutlined />,
+                      label: t('chatbot2.delete'),
                       onClick: (e) => {
                         e.domEvent.stopPropagation();
                         // 显示确认对话框
