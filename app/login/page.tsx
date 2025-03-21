@@ -45,8 +45,8 @@ export default function LoginPage() {
           message.success('登录成功');
           setToken(loginResponse.data.access_token);
           setRefreshToken(loginResponse.data.refresh_token);
-          setUserType(loginResponse.data.user_type);
-          setUserName(USER_TYPE_ADMIN);  
+          setUserType(USER_TYPE_ADMIN);
+          setUserName(loginResponse.username);     
           setUserInfo(loginResponse.username, USER_TYPE_ADMIN);
           // setAppToken(loginResponse.app_token);
           router.replace('/main');
@@ -71,7 +71,7 @@ export default function LoginPage() {
           message.success('登录成功');
           setToken(loginResponse.data.access_token);
           setRefreshToken(loginResponse.data.refresh_token);
-          setUserType(loginResponse.data.user_type);
+          setUserType(USER_TYPE_COMMON);
           setUserName(loginResponse.username);  
           setUserInfo(loginResponse.username, USER_TYPE_COMMON);
           setAppToken(loginResponse.app_token);

@@ -154,7 +154,16 @@ export default function KnowledgePage() {
     try {
       setSaveLoading(true);
       request.post('/console/api/datasets/init'
-        , {"data_source":{"type":"upload_file","info_list":{"data_source_type":"upload_file","file_info_list":{"file_ids":["be0d08f0-acd8-447c-9dc9-587f43daf895"]}}},"indexing_technique":"high_quality","process_rule":{"rules":{"pre_processing_rules":[{"id":"remove_extra_spaces","enabled":true},{"id":"remove_urls_emails","enabled":false}],"segmentation":{"separator":"\n\n","max_tokens":500,"chunk_overlap":50}},"mode":"custom"},"doc_form":"text_model","doc_language":"Chinese","retrieval_model":{"search_method":"semantic_search","reranking_enable":true,"reranking_model":{"reranking_provider_name":"tongyi","reranking_model_name":"gte-rerank"},"top_k":3,"score_threshold_enabled":false,"score_threshold":0.5},"embedding_model":"text-embedding-v1","embedding_model_provider":"tongyi"})
+        , {"data_source":{"type":"upload_file"
+          ,"info_list":{"data_source_type"
+            :"upload_file","file_info_list"
+            :{"file_ids":[""+fileId+""]}}}
+            ,"indexing_technique":"high_quality"
+            ,"process_rule":{"rules":
+              {"pre_processing_rules":
+                [{"id":"remove_extra_spaces","enabled":true}
+                  ,{"id":"remove_urls_emails","enabled":false}]
+                  ,"segmentation":{"separator":"\n\n","max_tokens":500,"chunk_overlap":50}},"mode":"custom"},"doc_form":"text_model","doc_language":"Chinese","retrieval_model":{"search_method":"semantic_search","reranking_enable":true,"reranking_model":{"reranking_provider_name":"tongyi","reranking_model_name":"gte-rerank"},"top_k":3,"score_threshold_enabled":false,"score_threshold":0.5},"embedding_model":"text-embedding-v1","embedding_model_provider":"tongyi"})
         .then((res) => {
           message.success(t('knowledge.saveSuccess'));
           setUploadOpen(false);

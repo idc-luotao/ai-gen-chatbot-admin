@@ -8,7 +8,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { ReactNode, useEffect, useState } from 'react';
 import './globals.css';
 import { request } from '../utils/http';
-import { removeTokens, USER_TYPE_ADMIN } from '../utils/storage';
+import { getUserType, removeTokens, USER_TYPE_ADMIN } from '../utils/storage';
 import { UserProvider, useUser } from '../contexts/UserContext';
 import { t, useTranslation } from '../utils/i18n';
 
@@ -21,7 +21,8 @@ function AppLayout({ children }: { children: ReactNode }) {
   const isLoginPage = pathname === '/login';
   const isAdminPage = pathname === '/users' || pathname === '/knowledge' || pathname === '/llm-settings';
   const { userName, userType } = useUser();
-  const isAdmin = userType === USER_TYPE_ADMIN;
+  const userTypeValue = getUserType();
+  const isAdmin = userTypeValue === USER_TYPE_ADMIN;
   const { t } = useTranslation();
 
   const handleMenuClick = async ({ key }: { key: string }) => {
@@ -94,7 +95,7 @@ function AppLayout({ children }: { children: ReactNode }) {
                 }
               }}>
                 <UserOutlined style={{ marginRight: '8px' }} />
-                <Text>{isAdmin ? USER_TYPE_ADMIN : userName}</Text>
+                <Text>{isAdmin ? USER_TYPE_ADMIN+'('+userName+')' : userName}</Text>
               </div>
             </Dropdown>
             <LanguageSelector />
