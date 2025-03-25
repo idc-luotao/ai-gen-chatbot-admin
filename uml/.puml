@@ -7,7 +7,7 @@ alt 返回问题的结果里包含JSON
     聊天机器人前端    -> mcp_server:  获取SSFLOW申请需要的参数
     mcp_server      -> 聊天机器人前端: 返回SSFLOW申请需要的参数
     聊天机器人前端  -> 聊天机器人前端: 根据SSFLOW申请需要的参数生成form表单
-    聊天机器人前端    -> mcp_server:  发送SSflow申请
+    聊天机器人前端    -> mcp_server:  form表单里输入参数后发送SSflow申请
     mcp_server      -> ssflow: 发送SSflow申请
     ssflow          -> mcp_server: 返回SSFLOW申请结果
     mcp_server      -> 聊天机器人前端 : 返回SSFLOW申请结果
