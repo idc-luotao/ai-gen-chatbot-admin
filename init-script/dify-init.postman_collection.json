@@ -1,0 +1,479 @@
+{
+	"info": {
+		"_postman_id": "08d04d14-9400-4a7a-95d4-16ae9884924c",
+		"name": "dify-init",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "38731773"
+	},
+	"item": [
+		{
+			"name": "01_setup_admin_user",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"email\": \"luotao001@gmail.com\",\r\n  \"name\": \"luotao001@gmail.com\",\r\n  \"password\": \"U0001001\"\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5001/console/api/setup",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"console",
+						"api",
+						"setup"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "02_login_admin",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"let responseData = pm.response.json();\r",
+							"if (responseData.data.access_token) {\r",
+							"    console.log('access_token:'+responseData.data.access_token)\r",
+							"    pm.environment.set(\"access_token\", responseData.data.access_token);\r",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"email\": \"luotao004@gmail.com\",\r\n  \"password\": \"U0001001\"\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5001/console/api/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"console",
+						"api",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "03_setup_llm_tongyi",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"config_from\":\"predefined-model\",\"credentials\":{\"dashscope_api_key\":\"sk-5a9c8e918484427ebddf4a2306d2ebc3\"},\"load_balancing\":{\"enabled\":false,\"configs\":[]}}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5001/console/api/workspaces/current/model-providers/tongyi",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"console",
+						"api",
+						"workspaces",
+						"current",
+						"model-providers",
+						"tongyi"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "0401_upload_file_for_knowledge",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/C:/Users/aeon/Documents/work/rag/aeon08.txt"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:5001/console/api/files/upload?source=datasets",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"console",
+						"api",
+						"files",
+						"upload"
+					],
+					"query": [
+						{
+							"key": "source",
+							"value": "datasets"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "0402_add_knowledge",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"data_source\":{\"type\":\"upload_file\",\"info_list\":{\"data_source_type\":\"upload_file\",\"file_info_list\":{\"file_ids\":[\"f6408ec1-e122-42be-9b15-24c4ef0837a6\"]}}},\"indexing_technique\":\"high_quality\",\"process_rule\":{\"rules\":{\"pre_processing_rules\":[{\"id\":\"remove_extra_spaces\",\"enabled\":true},{\"id\":\"remove_urls_emails\",\"enabled\":false}],\"segmentation\":{\"separator\":\"\\n\\n\",\"max_tokens\":500,\"chunk_overlap\":50}},\"mode\":\"custom\"},\"doc_form\":\"text_model\",\"doc_language\":\"Chinese\",\"retrieval_model\":{\"search_method\":\"semantic_search\",\"reranking_enable\":true,\"reranking_model\":{\"reranking_provider_name\":\"tongyi\",\"reranking_model_name\":\"gte-rerank\"},\"top_k\":3,\"score_threshold_enabled\":false,\"score_threshold\":0.5},\"embedding_model\":\"text-embedding-v1\",\"embedding_model_provider\":\"tongyi\"}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5001/console/api/datasets/init",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"console",
+						"api",
+						"datasets",
+						"init"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "test1",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"data_source\":{\"type\":\"upload_file\",\"info_list\":{\"data_source_type\":\"upload_file\",\"file_info_list\":{\"file_ids\":[\"e2ff578f-3f64-4b2d-8a93-17d1bfd695e1\"]}}},\"indexing_technique\":\"economy\",\"process_rule\":{\"rules\":{\"pre_processing_rules\":[{\"id\":\"remove_extra_spaces\",\"enabled\":true},{\"id\":\"remove_urls_emails\",\"enabled\":false}],\"segmentation\":{\"separator\":\"\\n\\n\",\"max_tokens\":500,\"chunk_overlap\":50}},\"mode\":\"custom\"},\"doc_form\":\"text_model\",\"doc_language\":\"Chinese\",\"retrieval_model\":{\"search_method\":\"semantic_search\",\"reranking_enable\":false,\"reranking_model\":{\"reranking_provider_name\":\"\",\"reranking_model_name\":\"\"},\"top_k\":3,\"score_threshold_enabled\":false,\"score_threshold\":0.5},\"embedding_model\":\"\",\"embedding_model_provider\":\"\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:80/console/api/datasets/init",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "80",
+							"path": [
+								"console",
+								"api",
+								"datasets",
+								"init"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Server",
+							"value": "nginx/1.27.0"
+						},
+						{
+							"key": "Date",
+							"value": "Tue, 28 Jan 2025 06:20:40 GMT"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"key": "Content-Length",
+							"value": "1240"
+						},
+						{
+							"key": "Connection",
+							"value": "keep-alive"
+						},
+						{
+							"key": "X-Version",
+							"value": "0.15.2"
+						},
+						{
+							"key": "X-Env",
+							"value": "PRODUCTION"
+						},
+						{
+							"key": "Vary",
+							"value": "Cookie"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"dataset\": {\n        \"id\": \"71c011d4-d1e5-45c9-8eb5-0ce5dc388016\",\n        \"name\": \"test3.txt...\",\n        \"description\": \"useful for when you want to answer queries about the test3.txt\",\n        \"permission\": \"only_me\",\n        \"data_source_type\": \"upload_file\",\n        \"indexing_technique\": \"economy\",\n        \"created_by\": \"60e1d36a-e296-49dd-b076-85873fb56849\",\n        \"created_at\": 1738045240\n    },\n    \"documents\": [\n        {\n            \"id\": \"7b207dca-871b-463a-b2a8-e62de17a0edc\",\n            \"position\": 1,\n            \"data_source_type\": \"upload_file\",\n            \"data_source_info\": {\n                \"upload_file_id\": \"e2ff578f-3f64-4b2d-8a93-17d1bfd695e1\"\n            },\n            \"data_source_detail_dict\": {\n                \"upload_file\": {\n                    \"id\": \"e2ff578f-3f64-4b2d-8a93-17d1bfd695e1\",\n                    \"name\": \"test3.txt\",\n                    \"size\": 1116,\n                    \"extension\": \"txt\",\n                    \"mime_type\": \"text/plain\",\n                    \"created_by\": \"60e1d36a-e296-49dd-b076-85873fb56849\",\n                    \"created_at\": 1738045179.20099\n                }\n            },\n            \"dataset_process_rule_id\": \"88a98b55-93b7-43d4-907a-f83659e2004e\",\n            \"name\": \"test3.txt\",\n            \"created_from\": \"web\",\n            \"created_by\": \"60e1d36a-e296-49dd-b076-85873fb56849\",\n            \"created_at\": 1738045240,\n            \"tokens\": 0,\n            \"indexing_status\": \"parsing\",\n            \"error\": null,\n            \"enabled\": true,\n            \"disabled_at\": null,\n            \"disabled_by\": null,\n            \"archived\": false,\n            \"display_status\": \"indexing\",\n            \"word_count\": 0,\n            \"hit_count\": 0,\n            \"doc_form\": \"text_model\"\n        }\n    ],\n    \"batch\": \"20250128062040610536\"\n}"
+				}
+			]
+		},
+		{
+			"name": "05_update_chatbot_prompt_and_k",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"pre_prompt\":\"\\n# ユーザー質問対応ガイド\\n\\n通常のユーザーからの質問には、**自然な会話体**で回答してください。\\n\\n## 応答ルール\\n1. 受け取ったデータを**丁寧に分析**してください\\n2. 技術的な専門用語を避け、**わかりやすい言葉**で説明してください\\n3. **重要な情報を強調**し、文脈に応じて適切な説明を加えてください\\n4. ユーザーが理解しやすいように、**簡潔かつ明確な文章**で回答してください\\n5. ユーザーからの入力を分析し、以下のケースに対応してください：\\n\\n   > ### a. 明示的なツール/フロー指定\\n   > ユーザーが明示的にツールやフローを指定した場合（例：「〇〇ツールを使いたい」「△△フローで処理したい」「フロー2を実行して」「天気ツールを使って」など）：\\n   > - 説明や前置き文による応答の後、**必ず最後にJSON形式**を含めてください\\n   \\n   > ### b. トピック関連質問\\n   > 特定のトピックに関する質問で、関連するツールまたはフローが利用できる場合：\\n   > - ユーザーの質問内容を分析し、添付データに含まれるツール、フローの説明と照合してください\\n   > - 質問の意図や内容に**最も適したツールまたはフロー**を選択してください\\n   > - 説明や提案の後、**必ず最後にJSON形式**を含めてください\\n   \\n   > ### c. JSON形式応答\\n   > 上記a,bの場合、説明や前置き文の後に**必ず以下のJSON形式**を含めてください：\\n   > ```json\\n   > {\\n   >     \\\"id\\\": \\\"対象ツール/フローのID（toolsは文字列、flowsは数値）\\\",\\n   >     \\\"type\\\": \\\"tool または flow\\\",\\n   >     \\\"name\\\": \\\"対象ツール/フローの名前\\\"\\n   > }\\n   > ```\\n\\n   > ### d. 一覧表示リクエスト\\n   > 一覧表示を求められた場合（例：「利用できるツールを教えて」「どんなフローがある？」）：\\n   > - 通常の会話形式で概要を説明した後に、利用可能なツールやフローの名前とその簡単な説明を提供してください\\n   > - 特に指定がなければ、JSONは返さないでください\\n\\n   > ### e. 非アクティブなツール/フロー\\n   > \\\"active\\\": false が設定されているツールやフローについて質問された場合：\\n   > - JSON形式の応答は**行わず**、通常の**自然な会話体**で回答してください\\n   > - ツールやフローが現在利用できない状態であることを伝えつつ、一般的な情報を提供してください\\n\\n   > ### f. 会話の継続\\n   > ユーザーが「はい」「いいえ」などの短い応答をした場合：\\n   > - 直前の会話文脈を考慮して対応してください\\n   > - 直前がツール/フロー実行の提案だった場合は、肯定的な返答に対しては説明と共にそのツール/フローのJSONを返してください\\n   > - 質問の内容が不明確な場合は、追加情報を求めてください\\n\\n6. a、bのケースや、会話継続でツール/フロー実行の承認があった場合は説明や提案の後に**必ずJSON形式**を含めて応答し、それ以外は通常の文章で回答してください\\n\\n## 添付データ（ツールとフロー一覧）：\\n{\\n  \\\"flows\\\": [\\n    {\\n      \\\"description\\\": \\\"GenSEQ -> MakeApply のフロー\\\",\\n      \\\"error\\\": null,\\n      \\\"id\\\": 1,\\n      \\\"name\\\": \\\"フロー1\\\"\\n    },\\n    {\\n      \\\"description\\\": \\\"weather -> GenSEQ のフロー\\\",\\n      \\\"error\\\": null,\\n      \\\"id\\\": 2,\\n      \\\"name\\\": \\\"フロー2\\\"\\n    },\\n    {\\n      \\\"description\\\": \\\"GenSEQ -> weather -> GenSEQ -> MakeApply のフロー\\\",\\n      \\\"error\\\": null,\\n      \\\"id\\\": 3,\\n      \\\"name\\\": \\\"フロー3\\\"\\n    },\\n    {\\n      \\\"description\\\": \\\"test\\\",\\n      \\\"error\\\": null,\\n      \\\"id\\\": 4,\\n      \\\"name\\\": \\\"test\\\"\\n    }\\n  ],\\n  \\\"tools\\\": [\\n    {\\n      \\\"active\\\": true,\\n      \\\"description\\\": \\\"指定された緯度と経度に基づいて、最新の天気情報を予報します。\\\",\\n      \\\"error\\\": null,\\n      \\\"id\\\": \\\"1\\\",\\n      \\\"name\\\": \\\"weather\\\"\\n    },\\n    {\\n      \\\"active\\\": true,\\n      \\\"description\\\": \\\"GenSEQツールの説明\\\",\\n      \\\"error\\\": null,\\n      \\\"id\\\": \\\"2\\\",\\n      \\\"name\\\": \\\"GenSEQ\\\"\\n    },\\n    {\\n      \\\"active\\\": true,\\n      \\\"description\\\": \\\"MakeApplyツールの説明\\\",\\n      \\\"error\\\": null,\\n      \\\"id\\\": \\\"3\\\",\\n      \\\"name\\\": \\\"MakeApply\\\"\\n    },\\n    {\\n      \\\"active\\\": true,\\n      \\\"description\\\": \\\"testtest\\\",\\n      \\\"error\\\": null,\\n      \\\"id\\\": \\\"4\\\",\\n      \\\"name\\\": \\\"test\\\"\\n    },\\n    {\\n      \\\"active\\\": true,\\n      \\\"description\\\": \\\"test2\\\",\\n      \\\"error\\\": null,\\n      \\\"id\\\": \\\"5\\\",\\n      \\\"name\\\": \\\"test2\\\"\\n    },\\n    {\\n      \\\"active\\\": true,\\n      \\\"description\\\": \\\"testtest\\\",\\n      \\\"error\\\": null,\\n      \\\"id\\\": \\\"6\\\",\\n      \\\"name\\\": \\\"daa\\\"\\n    },\\n    {\\n      \\\"active\\\": true,\\n      \\\"description\\\": \\\"aaaaaaa\\\",\\n      \\\"error\\\": null,\\n      \\\"id\\\": \\\"7\\\",\\n      \\\"name\\\": \\\"ttta\\\"\\n    }\\n  ]\\n}\\n\\nこの添付データを参照し、利用可能なツールとフローの情報を把握してください。\\nユーザーからの質問に最適なツールやフローを選択し、適切な形式で応答してください。\\n**\\\"active\\\": false** のものに対してはJSONではなく会話形式で対応してください。\\n\",\"prompt_type\":\"simple\",\"chat_prompt_config\":{},\"completion_prompt_config\":{},\"user_input_form\":[],\"dataset_query_variable\":\"\",\"more_like_this\":{\"enabled\":false},\"opening_statement\":\"\",\"suggested_questions\":[],\"sensitive_word_avoidance\":{\"enabled\":false,\"type\":\"\",\"configs\":[]},\"speech_to_text\":{\"enabled\":false},\"text_to_speech\":{\"enabled\":false},\"file_upload\":{\"image\":{\"detail\":\"high\",\"enabled\":false,\"number_limits\":3,\"transfer_methods\":[\"remote_url\",\"local_file\"]},\"enabled\":false,\"allowed_file_types\":[],\"allowed_file_extensions\":[\".JPG\",\".JPEG\",\".PNG\",\".GIF\",\".WEBP\",\".SVG\",\".MP4\",\".MOV\",\".MPEG\",\".MPGA\"],\"allowed_file_upload_methods\":[\"remote_url\",\"local_file\"],\"number_limits\":3},\"suggested_questions_after_answer\":{\"enabled\":false},\"retriever_resource\":{\"enabled\":true},\"agent_mode\":{\"enabled\":false,\"max_iteration\":5,\"strategy\":\"react\",\"tools\":[]},\"model\":{\"provider\":\"tongyi\",\"name\":\"qwen2.5-72b-instruct\",\"mode\":\"chat\",\"completion_params\":{}},\"dataset_configs\":{\"top_k\":4,\"reranking_mode\":\"reranking_model\",\"reranking_model\":{\"reranking_provider_name\":\"tongyi\",\"reranking_model_name\":\"gte-rerank\"},\"reranking_enable\":true,\"retrieval_model\":\"multiple\",\"datasets\":{\"datasets\":[{\"dataset\":{\"enabled\":true,\"id\":\"82cee086-baf4-4130-957a-bea6bde1c8a8\"}}]}}}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5001/console/api/apps/cc5e18f9-0cd0-4faf-9c41-c469ff90fed3/model-config",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"console",
+						"api",
+						"apps",
+						"cc5e18f9-0cd0-4faf-9c41-c469ff90fed3",
+						"model-config"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "06_test_chatbot",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "app-SzPu3DgsOEd8awYRs98Hes4C",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"inputs\": {},\r\n    \"query\": \"你是什么模型？\",\r\n    \"response_mode\": \"blocking\",\r\n    \"conversation_id\": \"\",\r\n    \"user\": \"u11@gmail.com\",\r\n    \"files\": []\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:5001/v1/chat-messages",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "5001",
+					"path": [
+						"v1",
+						"chat-messages"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "901_get_provider",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "app-SzPu3DgsOEd8awYRs98Hes4C",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"inputs\": {},\r\n    \"query\": \"你是什么模型？\",\r\n    \"response_mode\": \"blocking\",\r\n    \"conversation_id\": \"\",\r\n    \"user\": \"u11@gmail.com\",\r\n    \"files\": []\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:5001/v1/chat-messages",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "5001",
+					"path": [
+						"v1",
+						"chat-messages"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "902_login_chat_user",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"let responseData = pm.response.json();\r",
+							"if (responseData.data.access_token) {\r",
+							"    console.log('access_token:'+responseData.data.access_token)\r",
+							"    pm.environment.set(\"access_token\", responseData.data.access_token);\r",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"email\":\"u11@gmail.com\",\"password\":\"123456\",\"language\":\"zh-Hans\",\"remember_me\":true}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5001/console/api/chat-user/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"console",
+						"api",
+						"chat-user",
+						"login"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
